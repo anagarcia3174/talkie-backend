@@ -1,0 +1,56 @@
+package config
+
+import (
+	"fmt"
+	"os"
+)
+
+type Config struct {
+	DatabaseURL string
+	Port        string
+	JWTSecret   string
+	TMDBAPIKey  string
+	LogLevel    string
+}
+
+var validLogLevels = map[string]bool{
+	"debug": true,
+	"info":  true,
+	"warn":  true,
+	"error": true,
+}
+
+func Load() (*Config, error) {
+	cfg := &Config{
+		DatabaseURL: os.Getenv("DATABASE_URL"),
+		Port: getOrDefault("PORT", "8080"),
+		JWTSecret: os.Getenv("JWT_SECRET"),
+		TMDBAPIKey: os.Getenv("TMDB_API_KEY"),
+		LogLevel: getOrDefault("LOG_LEVEL", "info"),
+	}
+
+	if cfg.DatabaseURL == "" {
+		return nil, fmt.Errorf("DATABASE_URL is required")
+	}
+
+	if cfg.JWTSecret == "" {
+		return nil, fmt.Errorf("JWT_SECRET is required")
+	}
+
+	if cfg.TMDBAPIKey == "" {
+		return nil, fmt.Errorf("TMDB_API_KEY is required")
+	}
+
+	if !validLogLevels[cfg.LogLevel] {
+		return nil, fmt.Errorf("LOG_LEVEL must be one of: debug, info, warn, error (got %q)", cfg.LogLevel)
+	}
+
+	return cfg, nil
+}
+
+func getOrDefault(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
