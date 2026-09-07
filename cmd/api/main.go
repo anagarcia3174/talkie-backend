@@ -8,9 +8,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/anagarcia3174/talkie-backend/internal/auth"
 	"github.com/anagarcia3174/talkie-backend/internal/config"
 	"github.com/anagarcia3174/talkie-backend/internal/db"
+	dbgen "github.com/anagarcia3174/talkie-backend/internal/db/generated"
 	"github.com/anagarcia3174/talkie-backend/internal/httpapi"
 	"github.com/anagarcia3174/talkie-backend/internal/logging"
 	"github.com/joho/godotenv"
@@ -38,7 +41,15 @@ func main() {
 	}
 	defer pool.Close()
 
-	router := httpapi.NewRouter(logger)
+	queries := dbgen.New(pool)
+	authSvc := auth.NewService(queries, cfg.JWTSecret)
+	authHndler := httpapi.NewAuthHandler(authSvc, logger)
+
+	router := httpapi.NewRouter(httpapi.RouterDeps{
+		Logger:      logger,
+		AuthHandler: authHndler,
+		JWTSecret:   cfg.JWTSecret,
+	})
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	server := &http.Server{
@@ -46,9 +57,27 @@ func main() {
 		Handler: router,
 	}
 
-	logger.Info("starting server", "port", cfg.Port)
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logger.Error("server failed to start", "error", err)
-		os.Exit(1)
+		logger.Info("starting server", "port", cfg.Port)
+
+	serverErr := make(chan error, 1)
+	go func() {
+		serverErr <- server.ListenAndServe()
+	}()
+
+	select {
+	case err := <-serverErr:
+		if err != nil && err != http.ErrServerClosed {
+			logger.Error("server failed to start", "error", err)
+			os.Exit(1)
+		}
+	case <-ctx.Done():
+		logger.Info("shutdown signal received")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			logger.Error("graceful shutdown failed", "error", err)
+			os.Exit(1)
+		}
+		logger.Info("server shut down cleanly")
 	}
 }
