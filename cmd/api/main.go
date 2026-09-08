@@ -16,6 +16,7 @@ import (
 	dbgen "github.com/anagarcia3174/talkie-backend/internal/db/generated"
 	"github.com/anagarcia3174/talkie-backend/internal/httpapi"
 	"github.com/anagarcia3174/talkie-backend/internal/logging"
+	"github.com/anagarcia3174/talkie-backend/internal/tmdb"
 	"github.com/joho/godotenv"
 )
 
@@ -43,12 +44,14 @@ func main() {
 
 	queries := dbgen.New(pool)
 	authSvc := auth.NewService(queries, cfg.JWTSecret)
-	authHndler := httpapi.NewAuthHandler(authSvc, logger)
-
+	authHandler := httpapi.NewAuthHandler(authSvc, logger)
+	tmdbClient := tmdb.NewClient(cfg.TMDBAPIKey)
+	mediaHandler := httpapi.NewMediaHandler(tmdbClient, logger)
 	router := httpapi.NewRouter(httpapi.RouterDeps{
-		Logger:      logger,
-		AuthHandler: authHndler,
-		JWTSecret:   cfg.JWTSecret,
+		Logger:       logger,
+		AuthHandler:  authHandler,
+		MediaHandler: mediaHandler,
+		JWTSecret:    cfg.JWTSecret,
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
@@ -57,7 +60,7 @@ func main() {
 		Handler: router,
 	}
 
-		logger.Info("starting server", "port", cfg.Port)
+	logger.Info("starting server", "port", cfg.Port)
 
 	serverErr := make(chan error, 1)
 	go func() {

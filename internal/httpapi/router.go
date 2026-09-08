@@ -13,6 +13,7 @@ import (
 type RouterDeps struct {
 	Logger      *slog.Logger
 	AuthHandler *AuthHandler
+	MediaHandler *MediaHandler
 	JWTSecret   string
 }
 
@@ -34,6 +35,15 @@ func NewRouter(deps RouterDeps) http.Handler {
 	r.Group(func(r chi.Router) {
 		r.Use(AuthMiddleware(deps.JWTSecret))
 		r.Get("/me", deps.AuthHandler.Me)
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(httprate.LimitBy(60, time.Minute, clientIPKey))
+		r.Get("/search", deps.MediaHandler.Search)
+		r.Get("/trending", deps.MediaHandler.Trending)
+		r.Get("/movies/{tmdb_id}", deps.MediaHandler.GetMovie)
+		r.Get("/tv/{tmdb_id}", deps.MediaHandler.GetTVShow)
+		r.Get("/tv/{tmdb_id}/season/{season}/episode/{episode}", deps.MediaHandler.GetEpisode)
 	})
 
 	return r
