@@ -144,15 +144,15 @@ func (ns NullReportStatus) Value() (driver.Value, error) {
 }
 
 type Comment struct {
-	ID               uuid.UUID   `json:"id"`
-	UserID           uuid.UUID   `json:"user_id"`
-	TmdbMediaType    MediaType   `json:"tmdb_media_type"`
-	TmdbID           int32       `json:"tmdb_id"`
-	SeasonNumber     pgtype.Int2 `json:"season_number"`
-	EpisodeNumber    pgtype.Int2 `json:"episode_number"`
-	TimestampSeconds int32       `json:"timestamp_seconds"`
-	Body             string      `json:"body"`
-	CreatedAt        time.Time   `json:"created_at"`
+	ID               uuid.UUID `json:"id"`
+	UserID           uuid.UUID `json:"user_id"`
+	TmdbMediaType    MediaType `json:"tmdb_media_type"`
+	TmdbID           int32     `json:"tmdb_id"`
+	SeasonNumber     *int32    `json:"season_number"`
+	EpisodeNumber    *int32    `json:"episode_number"`
+	TimestampSeconds int32     `json:"timestamp_seconds"`
+	Body             string    `json:"body"`
+	CreatedAt        time.Time `json:"created_at"`
 }
 
 type Report struct {

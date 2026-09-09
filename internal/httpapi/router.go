@@ -14,6 +14,7 @@ type RouterDeps struct {
 	Logger      *slog.Logger
 	AuthHandler *AuthHandler
 	MediaHandler *MediaHandler
+	CommentHandler *CommentHandler
 	JWTSecret   string
 }
 
@@ -44,6 +45,16 @@ func NewRouter(deps RouterDeps) http.Handler {
 		r.Get("/movies/{tmdb_id}", deps.MediaHandler.GetMovie)
 		r.Get("/tv/{tmdb_id}", deps.MediaHandler.GetTVShow)
 		r.Get("/tv/{tmdb_id}/season/{season}/episode/{episode}", deps.MediaHandler.GetEpisode)
+		r.Get("/movies/{tmdb_id}/comments", deps.CommentHandler.ListByMovie)
+		r.Get("/tv/{tmdb_id}/season/{season}/episode/{episode}/comments", deps.CommentHandler.ListByEpisode)
+
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(AuthMiddleware(deps.JWTSecret))
+		r.Post("/comments", deps.CommentHandler.Create)
+		r.Patch("/comments/{comment_id}", deps.CommentHandler.Update)
+		r.Delete("/comments/{comment_id}", deps.CommentHandler.Delete)
 	})
 
 	return r

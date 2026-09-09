@@ -11,10 +11,16 @@ import (
 )
 
 type Querier interface {
+	CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteComment(ctx context.Context, id uuid.UUID) error
+	GetCommentByID(ctx context.Context, id uuid.UUID) (Comment, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	ListCommentsByEpisode(ctx context.Context, arg ListCommentsByEpisodeParams) ([]Comment, error)
+	ListCommentsByMovie(ctx context.Context, tmdbID int32) ([]Comment, error)
+	UpdateComment(ctx context.Context, arg UpdateCommentParams) (Comment, error)
 }
 
 var _ Querier = (*Queries)(nil)

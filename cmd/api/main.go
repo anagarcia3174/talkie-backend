@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/anagarcia3174/talkie-backend/internal/auth"
+	"github.com/anagarcia3174/talkie-backend/internal/comments"
 	"github.com/anagarcia3174/talkie-backend/internal/config"
 	"github.com/anagarcia3174/talkie-backend/internal/db"
 	dbgen "github.com/anagarcia3174/talkie-backend/internal/db/generated"
@@ -47,10 +48,13 @@ func main() {
 	authHandler := httpapi.NewAuthHandler(authSvc, logger)
 	tmdbClient := tmdb.NewClient(cfg.TMDBAPIKey)
 	mediaHandler := httpapi.NewMediaHandler(tmdbClient, logger)
+	commentSvc := comments.NewService(queries)
+	commentHandler := httpapi.NewCommentHandler(commentSvc, logger)
 	router := httpapi.NewRouter(httpapi.RouterDeps{
 		Logger:       logger,
 		AuthHandler:  authHandler,
 		MediaHandler: mediaHandler,
+		CommentHandler: commentHandler,
 		JWTSecret:    cfg.JWTSecret,
 	})
 
