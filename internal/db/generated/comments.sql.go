@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -88,12 +89,16 @@ func (q *Queries) GetCommentByID(ctx context.Context, id uuid.UUID) (Comment, er
 }
 
 const listCommentsByEpisode = `-- name: ListCommentsByEpisode :many
-SELECT id, user_id, tmdb_media_type, tmdb_id, season_number, episode_number, timestamp_seconds, body, created_at FROM comments
-WHERE tmdb_media_type = 'tv'
-  AND tmdb_id = $1
-  AND season_number = $2
-  AND episode_number = $3
-ORDER BY timestamp_seconds ASC
+SELECT c.id, c.user_id, c.tmdb_media_type, c.tmdb_id, c.season_number,
+       c.episode_number, c.timestamp_seconds, c.body, c.created_at,
+       u.username
+FROM comments c
+JOIN users u ON u.id = c.user_id
+WHERE c.tmdb_media_type = 'tv'
+  AND c.tmdb_id = $1
+  AND c.season_number = $2
+  AND c.episode_number = $3
+ORDER BY c.timestamp_seconds ASC
 `
 
 type ListCommentsByEpisodeParams struct {
@@ -102,15 +107,28 @@ type ListCommentsByEpisodeParams struct {
 	EpisodeNumber *int32 `json:"episode_number"`
 }
 
-func (q *Queries) ListCommentsByEpisode(ctx context.Context, arg ListCommentsByEpisodeParams) ([]Comment, error) {
+type ListCommentsByEpisodeRow struct {
+	ID               uuid.UUID `json:"id"`
+	UserID           uuid.UUID `json:"user_id"`
+	TmdbMediaType    MediaType `json:"tmdb_media_type"`
+	TmdbID           int32     `json:"tmdb_id"`
+	SeasonNumber     *int32    `json:"season_number"`
+	EpisodeNumber    *int32    `json:"episode_number"`
+	TimestampSeconds int32     `json:"timestamp_seconds"`
+	Body             string    `json:"body"`
+	CreatedAt        time.Time `json:"created_at"`
+	Username         string    `json:"username"`
+}
+
+func (q *Queries) ListCommentsByEpisode(ctx context.Context, arg ListCommentsByEpisodeParams) ([]ListCommentsByEpisodeRow, error) {
 	rows, err := q.db.Query(ctx, listCommentsByEpisode, arg.TmdbID, arg.SeasonNumber, arg.EpisodeNumber)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Comment{}
+	items := []ListCommentsByEpisodeRow{}
 	for rows.Next() {
-		var i Comment
+		var i ListCommentsByEpisodeRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -121,6 +139,7 @@ func (q *Queries) ListCommentsByEpisode(ctx context.Context, arg ListCommentsByE
 			&i.TimestampSeconds,
 			&i.Body,
 			&i.CreatedAt,
+			&i.Username,
 		); err != nil {
 			return nil, err
 		}
@@ -133,21 +152,38 @@ func (q *Queries) ListCommentsByEpisode(ctx context.Context, arg ListCommentsByE
 }
 
 const listCommentsByMovie = `-- name: ListCommentsByMovie :many
-SELECT id, user_id, tmdb_media_type, tmdb_id, season_number, episode_number, timestamp_seconds, body, created_at FROM comments
-WHERE tmdb_media_type = 'movie'
-  AND tmdb_id = $1
-ORDER BY timestamp_seconds ASC
+SELECT c.id, c.user_id, c.tmdb_media_type, c.tmdb_id, c.season_number,
+       c.episode_number, c.timestamp_seconds, c.body, c.created_at,
+       u.username
+FROM comments c
+JOIN users u ON u.id = c.user_id
+WHERE c.tmdb_media_type = 'movie'
+  AND c.tmdb_id = $1
+ORDER BY c.timestamp_seconds ASC
 `
 
-func (q *Queries) ListCommentsByMovie(ctx context.Context, tmdbID int32) ([]Comment, error) {
+type ListCommentsByMovieRow struct {
+	ID               uuid.UUID `json:"id"`
+	UserID           uuid.UUID `json:"user_id"`
+	TmdbMediaType    MediaType `json:"tmdb_media_type"`
+	TmdbID           int32     `json:"tmdb_id"`
+	SeasonNumber     *int32    `json:"season_number"`
+	EpisodeNumber    *int32    `json:"episode_number"`
+	TimestampSeconds int32     `json:"timestamp_seconds"`
+	Body             string    `json:"body"`
+	CreatedAt        time.Time `json:"created_at"`
+	Username         string    `json:"username"`
+}
+
+func (q *Queries) ListCommentsByMovie(ctx context.Context, tmdbID int32) ([]ListCommentsByMovieRow, error) {
 	rows, err := q.db.Query(ctx, listCommentsByMovie, tmdbID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Comment{}
+	items := []ListCommentsByMovieRow{}
 	for rows.Next() {
-		var i Comment
+		var i ListCommentsByMovieRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -158,6 +194,7 @@ func (q *Queries) ListCommentsByMovie(ctx context.Context, tmdbID int32) ([]Comm
 			&i.TimestampSeconds,
 			&i.Body,
 			&i.CreatedAt,
+			&i.Username,
 		); err != nil {
 			return nil, err
 		}

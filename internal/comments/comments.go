@@ -29,6 +29,19 @@ type Comment struct {
 	CreatedAt        time.Time
 }
 
+type CommentWithUsername struct {
+	ID               string
+	UserID           string
+	Username         string
+	TMDBMediaType    MediaType
+	TMDBID           int32
+	SeasonNumber     *int32
+	EpisodeNumber    *int32
+	TimestampSeconds int32
+	Body             string
+	CreatedAt        time.Time
+}
+
 type CreateCommentInput struct {
 	UserID           string
 	TMDBMediaType    MediaType
@@ -86,15 +99,30 @@ func (s *Service) Create(ctx context.Context, in CreateCommentInput) (Comment, e
 	return toComment(row), nil
 }
 
-func (s *Service) ListByMovie(ctx context.Context, tmdbID int32) ([]Comment, error) {
+func (s *Service) ListByMovie(ctx context.Context, tmdbID int32) ([]CommentWithUsername, error) {
 	rows, err := s.comments.ListCommentsByMovie(ctx, tmdbID)
 	if err != nil {
 		return nil, err
 	}
-	return toComments(rows), nil
+	out := make([]CommentWithUsername, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, CommentWithUsername{
+			ID:               row.ID.String(),
+			UserID:           row.UserID.String(),
+			Username:         row.Username,
+			TMDBMediaType:    MediaType(row.TmdbMediaType),
+			TMDBID:           row.TmdbID,
+			SeasonNumber:     row.SeasonNumber,
+			EpisodeNumber:    row.EpisodeNumber,
+			TimestampSeconds: row.TimestampSeconds,
+			Body:             row.Body,
+			CreatedAt:        row.CreatedAt,
+		})
+	}
+	return out, nil
 }
 
-func (s *Service) ListByEpisode(ctx context.Context, tmdbID, season, episode int32) ([]Comment, error) {
+func (s *Service) ListByEpisode(ctx context.Context, tmdbID, season, episode int32) ([]CommentWithUsername, error) {
 	rows, err := s.comments.ListCommentsByEpisode(ctx, db.ListCommentsByEpisodeParams{
 		TmdbID:        tmdbID,
 		SeasonNumber:  &season,
@@ -103,7 +131,22 @@ func (s *Service) ListByEpisode(ctx context.Context, tmdbID, season, episode int
 	if err != nil {
 		return nil, err
 	}
-	return toComments(rows), nil
+	out := make([]CommentWithUsername, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, CommentWithUsername{
+			ID:               row.ID.String(),
+			UserID:           row.UserID.String(),
+			Username:         row.Username,
+			TMDBMediaType:    MediaType(row.TmdbMediaType),
+			TMDBID:           row.TmdbID,
+			SeasonNumber:     row.SeasonNumber,
+			EpisodeNumber:    row.EpisodeNumber,
+			TimestampSeconds: row.TimestampSeconds,
+			Body:             row.Body,
+			CreatedAt:        row.CreatedAt,
+		})
+	}
+	return out, nil
 }
 
 func (s *Service) Update(ctx context.Context, commentID, userID string, in UpdateCommentInput) (Comment, error) {
