@@ -18,28 +18,28 @@ const (
 )
 
 type Comment struct {
-	ID               string
-	UserID           string
-	TMDBMediaType    MediaType
-	TMDBID           int32
-	SeasonNumber     *int32
-	EpisodeNumber    *int32
-	TimestampSeconds int32
-	Body             string
-	CreatedAt        time.Time
+	ID               string    `json:"id"`
+	UserID           string    `json:"user_id"`
+	TMDBMediaType    MediaType `json:"tmdb_media_type"`
+	TMDBID           int32     `json:"tmdb_id"`
+	SeasonNumber     *int32    `json:"season_number"`
+	EpisodeNumber    *int32    `json:"episode_number"`
+	TimestampSeconds int32     `json:"timestamp_seconds"`
+	Body             string    `json:"body"`
+	CreatedAt        time.Time `json:"created_at"`
 }
 
 type CommentWithUsername struct {
-	ID               string
-	UserID           string
-	Username         string
-	TMDBMediaType    MediaType
-	TMDBID           int32
-	SeasonNumber     *int32
-	EpisodeNumber    *int32
-	TimestampSeconds int32
-	Body             string
-	CreatedAt        time.Time
+	ID               string    `json:"id"`
+	UserID           string    `json:"user_id"`
+	Username         string    `json:"username"`
+	TMDBMediaType    MediaType `json:"tmdb_media_type"`
+	TMDBID           int32     `json:"tmdb_id"`
+	SeasonNumber     *int32    `json:"season_number"`
+	EpisodeNumber    *int32    `json:"episode_number"`
+	TimestampSeconds int32     `json:"timestamp_seconds"`
+	Body             string    `json:"body"`
+	CreatedAt        time.Time `json:"created_at"`
 }
 
 type CreateCommentInput struct {

@@ -5,17 +5,20 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/anagarcia3174/talkie-backend/internal/auth"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
 )
 
 type RouterDeps struct {
-	Logger      *slog.Logger
-	AuthHandler *AuthHandler
-	MediaHandler *MediaHandler
+	Logger         *slog.Logger
+	AuthHandler    *AuthHandler
+	MediaHandler   *MediaHandler
 	CommentHandler *CommentHandler
-	JWTSecret   string
+	Sessions       *auth.SessionService
+	AllowedOrigin  string
 }
 
 func NewRouter(deps RouterDeps) http.Handler {
@@ -24,18 +27,33 @@ func NewRouter(deps RouterDeps) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.ClientIPFromRemoteAddr)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{deps.AllowedOrigin},
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", csrfHeaderName},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
 
 	r.Get("/health", healthHandler)
 
 	r.Group(func(r chi.Router) {
 		r.Use(httprate.LimitBy(5, time.Minute, clientIPKey))
+		r.Use(OriginMiddleware(deps.AllowedOrigin))
 		r.Post("/signup", deps.AuthHandler.Signup)
 		r.Post("/login", deps.AuthHandler.Login)
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Use(AuthMiddleware(deps.JWTSecret))
+		r.Use(AuthMiddleware(deps.Sessions))
 		r.Get("/me", deps.AuthHandler.Me)
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(OriginMiddleware(deps.AllowedOrigin))
+		r.Use(AuthMiddleware(deps.Sessions))
+		r.Use(CSRFMiddleware)
+		r.Post("/logout", deps.AuthHandler.Logout)
 	})
 
 	r.Group(func(r chi.Router) {
@@ -47,17 +65,19 @@ func NewRouter(deps RouterDeps) http.Handler {
 		r.Get("/tv/{tmdb_id}/season/{season}/episode/{episode}", deps.MediaHandler.GetEpisode)
 		r.Get("/movies/{tmdb_id}/comments", deps.CommentHandler.ListByMovie)
 		r.Get("/tv/{tmdb_id}/season/{season}/episode/{episode}/comments", deps.CommentHandler.ListByEpisode)
-
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Use(AuthMiddleware(deps.JWTSecret))
+		r.Use(OriginMiddleware(deps.AllowedOrigin))
+		r.Use(AuthMiddleware(deps.Sessions))
+		r.Use(CSRFMiddleware)
 		r.Post("/comments", deps.CommentHandler.Create)
 		r.Patch("/comments/{comment_id}", deps.CommentHandler.Update)
 		r.Delete("/comments/{comment_id}", deps.CommentHandler.Delete)
 	})
 
 	return r
+
 }
 
 func clientIPKey(r *http.Request) (string, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -44,19 +45,23 @@ func main() {
 	defer pool.Close()
 
 	queries := dbgen.New(pool)
-	authSvc := auth.NewService(queries, cfg.JWTSecret)
+	sessionSvc := auth.NewSessionService(queries)
+	authSvc := auth.NewService(queries, sessionSvc)
 	authHandler := httpapi.NewAuthHandler(authSvc, logger)
 	tmdbClient := tmdb.NewClient(cfg.TMDBAPIKey)
 	mediaHandler := httpapi.NewMediaHandler(tmdbClient, logger)
 	commentSvc := comments.NewService(queries)
 	commentHandler := httpapi.NewCommentHandler(commentSvc, logger)
 	router := httpapi.NewRouter(httpapi.RouterDeps{
-		Logger:       logger,
-		AuthHandler:  authHandler,
-		MediaHandler: mediaHandler,
+		Logger:         logger,
+		AuthHandler:    authHandler,
+		MediaHandler:   mediaHandler,
 		CommentHandler: commentHandler,
-		JWTSecret:    cfg.JWTSecret,
+		Sessions:       sessionSvc,
+		AllowedOrigin:  cfg.AllowedOrigin,
 	})
+
+	go startSessionCleanup(ctx, queries, logger)
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	server := &http.Server{
@@ -86,5 +91,27 @@ func main() {
 			os.Exit(1)
 		}
 		logger.Info("server shut down cleanly")
+	}
+}
+
+func startSessionCleanup(ctx context.Context, queries dbgen.Querier, logger *slog.Logger) {
+	cleanup := func() {
+		if err := queries.DeleteExpiredSessions(ctx); err != nil {
+			logger.Error("failed to delete expired sessions", "error", err)
+		}
+	}
+
+	cleanup()
+
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			cleanup()
+		}
 	}
 }

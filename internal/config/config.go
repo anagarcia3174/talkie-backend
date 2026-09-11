@@ -6,11 +6,11 @@ import (
 )
 
 type Config struct {
-	DatabaseURL string
-	Port        string
-	JWTSecret   string
-	TMDBAPIKey  string
-	LogLevel    string
+	DatabaseURL   string
+	Port          string
+	TMDBAPIKey    string
+	LogLevel      string
+	AllowedOrigin string
 }
 
 var validLogLevels = map[string]bool{
@@ -22,23 +22,23 @@ var validLogLevels = map[string]bool{
 
 func Load() (*Config, error) {
 	cfg := &Config{
-		DatabaseURL: os.Getenv("DATABASE_URL"),
-		Port: getOrDefault("PORT", "8080"),
-		JWTSecret: os.Getenv("JWT_SECRET"),
-		TMDBAPIKey: os.Getenv("TMDB_API_KEY"),
-		LogLevel: getOrDefault("LOG_LEVEL", "info"),
+		DatabaseURL:   os.Getenv("DATABASE_URL"),
+		Port:          getOrDefault("PORT", "8080"),
+		TMDBAPIKey:    os.Getenv("TMDB_API_KEY"),
+		LogLevel:      getOrDefault("LOG_LEVEL", "info"),
+		AllowedOrigin: os.Getenv("ALLOWED_ORIGIN"),
 	}
 
 	if cfg.DatabaseURL == "" {
 		return nil, fmt.Errorf("DATABASE_URL is required")
 	}
 
-	if cfg.JWTSecret == "" {
-		return nil, fmt.Errorf("JWT_SECRET is required")
-	}
-
 	if cfg.TMDBAPIKey == "" {
 		return nil, fmt.Errorf("TMDB_API_KEY is required")
+	}
+
+	if cfg.AllowedOrigin == "" {
+		return nil, fmt.Errorf("ALLOWED_ORIGIN is required")
 	}
 
 	if !validLogLevels[cfg.LogLevel] {

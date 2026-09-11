@@ -11,17 +11,13 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// imports needed: "context", "errors", "time" (already have these from
-// password.go/jwt.go in this same package), plus:
-// - your internal/db package (for db.Querier, db.CreateUserParams, etc.)
-// - "github.com/jackc/pgx/v5/pgconn" (for unique-violation inspection)
 
-// --- Types ---
+
 type User struct {
-	ID        string
-	Email     string
-	Username  string
-	CreatedAt time.Time
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	Username  string    `json:"username"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type SignupInput struct {
@@ -43,20 +39,20 @@ var (
 
 type Service struct {
 	users     db.Querier
-	jwtSecret string
+	sessions *SessionService
 }
 
-func NewService(users db.Querier, jwtSecret string) *Service {
-	return &Service{users: users, jwtSecret: jwtSecret}
+func NewService(users db.Querier, sessions *SessionService) *Service {
+	return &Service{users: users, sessions: sessions}
 }
 
-func (s *Service) Signup(ctx context.Context, in SignupInput) (User, error) {
+func (s *Service) Signup(ctx context.Context, in SignupInput) (User, string, time.Time, error) {
 	if in.Email == "" || in.Username == "" || len(in.Password) < 12 {
-		return User{}, ErrInvalidInput
+		return User{}, "", time.Time{}, ErrInvalidInput
 	}
 	hash, err := HashPassword(in.Password)
 	if err != nil {
-		return User{}, err
+		return User{}, "", time.Time{}, err
 	}
 	row, err := s.users.CreateUser(ctx, db.CreateUserParams{
 		Email:        in.Email,
@@ -68,38 +64,45 @@ func (s *Service) Signup(ctx context.Context, in SignupInput) (User, error) {
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			switch pgErr.ConstraintName {
 			case "users_email_key":
-				return User{}, ErrEmailTaken
+				return User{}, "", time.Time{}, ErrEmailTaken
 			case "users_username_key":
-				return User{}, ErrUsernameTaken
+				return User{}, "", time.Time{}, ErrUsernameTaken
 			}
 		}
-		return User{}, err
+		return User{}, "", time.Time{}, err
 	}
-	return toUser(row), nil
+
+	user := toUser(row)
+	token, expiresAt, err := s.sessions.Create(ctx, user.ID)
+	if err != nil {
+		return User{}, "", time.Time{}, err
+	}
+	return user, token, expiresAt, nil
 }
 
-func (s *Service) Login(ctx context.Context, in LoginInput) (User, string, error) {
+func (s *Service) Login(ctx context.Context, in LoginInput) (User, string, time.Time, error) {
 	row, err := s.users.GetUserByEmail(ctx, in.Email)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows){
-			return User{}, "", ErrInvalidCredentials
+		if errors.Is(err, pgx.ErrNoRows) {
+			return User{}, "", time.Time{}, ErrInvalidCredentials
 		}
-		return  User{}, "", err
+		return User{}, "", time.Time{}, err
 	}
 
 	match, err := CheckPassword(row.PasswordHash, in.Password)
 	if err != nil {
-		return User{}, "", err
+		return User{}, "", time.Time{}, err
 	}
 	if !match {
-		return User{}, "", ErrInvalidCredentials
+		return User{}, "", time.Time{}, ErrInvalidCredentials
 	}
+
 	user := toUser(row)
-	token, err := GenerateToken(user.ID, user.Email, s.jwtSecret)
+	token, expiresAt, err := s.sessions.Create(ctx, user.ID)
 	if err != nil {
-		return User{}, "", err
+		return User{}, "", time.Time{}, err
 	}
-	return user, token, nil
+	return user, token, expiresAt, nil
 }
 
 func (s *Service) GetCurrentUser(ctx context.Context, userID string) (User, error) {
@@ -117,6 +120,10 @@ func (s *Service) GetCurrentUser(ctx context.Context, userID string) (User, erro
 	}
 
 	return toUser(row), nil
+}
+
+func (s *Service) Logout(ctx context.Context, token string) error {
+	return s.sessions.Revoke(ctx, token)
 }
 
 func toUser(row db.User) User {
