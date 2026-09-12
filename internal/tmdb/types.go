@@ -55,3 +55,8 @@ type TrendingResult struct {
 	PosterPath  string    `json:"poster_path,omitempty"`
 	Overview    string    `json:"overview,omitempty"`
 }
+
+type TrendingResults struct {
+	Movies []TrendingResult `json:"movies"`
+	Shows  []TrendingResult `json:"shows"`
+}

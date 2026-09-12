@@ -230,24 +230,14 @@ func (c *Client) GetEpisodeDetails(ctx context.Context, tmdbID, season, episode 
 	}, nil
 }
 
-func (c *Client) GetTrending(ctx context.Context) ([]TrendingResult, error) {
+func (c *Client) fetchTrending(ctx context.Context, path string, mt MediaType) ([]TrendingResult, error) {
 	var raw rawTrendingResponse
-	if err := c.doGet(ctx, "/trending/all/day", nil, &raw); err != nil {
+	if err := c.doGet(ctx, path, nil, &raw); err != nil {
 		return nil, err
 	}
 
 	results := make([]TrendingResult, 0, len(raw.Results))
 	for _, item := range raw.Results {
-		var mt MediaType
-		switch item.MediaType {
-		case "movie":
-			mt = MediaTypeMovie
-		case "tv":
-			mt = MediaTypeTV
-		default:
-			continue
-		}
-
 		title := item.Title
 		releaseDate := item.ReleaseDate
 		if mt == MediaTypeTV {
@@ -266,4 +256,18 @@ func (c *Client) GetTrending(ctx context.Context) ([]TrendingResult, error) {
 	}
 
 	return results, nil
+}
+
+func (c *Client) GetTrending(ctx context.Context) (TrendingResults, error) {
+	movies, err := c.fetchTrending(ctx, "/trending/movie/day", MediaTypeMovie)
+	if err != nil {
+		return TrendingResults{}, err
+	}
+
+	shows, err := c.fetchTrending(ctx, "/trending/tv/day", MediaTypeTV)
+	if err != nil {
+		return TrendingResults{}, err
+	}
+
+	return TrendingResults{Movies: movies, Shows: shows}, nil
 }
