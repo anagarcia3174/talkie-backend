@@ -17,7 +17,7 @@ type RouterDeps struct {
 	AuthHandler    *AuthHandler
 	MediaHandler   *MediaHandler
 	CommentHandler *CommentHandler
-	Sessions       *auth.SessionService
+	Verifier       *auth.Verifier
 	AllowedOrigin  string
 }
 
@@ -30,30 +30,16 @@ func NewRouter(deps RouterDeps) http.Handler {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{deps.AllowedOrigin},
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Content-Type", csrfHeaderName},
-		AllowCredentials: true,
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: false,
 		MaxAge:           300,
 	}))
 
 	r.Get("/health", healthHandler)
 
 	r.Group(func(r chi.Router) {
-		r.Use(httprate.LimitBy(5, time.Minute, clientIPKey))
-		r.Use(OriginMiddleware(deps.AllowedOrigin))
-		r.Post("/signup", deps.AuthHandler.Signup)
-		r.Post("/login", deps.AuthHandler.Login)
-	})
-
-	r.Group(func(r chi.Router) {
-		r.Use(AuthMiddleware(deps.Sessions))
+		r.Use(AuthMiddleware(deps.Verifier))
 		r.Get("/me", deps.AuthHandler.Me)
-	})
-
-	r.Group(func(r chi.Router) {
-		r.Use(OriginMiddleware(deps.AllowedOrigin))
-		r.Use(AuthMiddleware(deps.Sessions))
-		r.Use(CSRFMiddleware)
-		r.Post("/logout", deps.AuthHandler.Logout)
 	})
 
 	r.Group(func(r chi.Router) {
@@ -69,8 +55,7 @@ func NewRouter(deps RouterDeps) http.Handler {
 
 	r.Group(func(r chi.Router) {
 		r.Use(OriginMiddleware(deps.AllowedOrigin))
-		r.Use(AuthMiddleware(deps.Sessions))
-		r.Use(CSRFMiddleware)
+		r.Use(AuthMiddleware(deps.Verifier))
 		r.Post("/comments", deps.CommentHandler.Create)
 		r.Patch("/comments/{comment_id}", deps.CommentHandler.Update)
 		r.Delete("/comments/{comment_id}", deps.CommentHandler.Delete)

@@ -11,6 +11,7 @@ type Config struct {
 	TMDBAPIKey    string
 	LogLevel      string
 	AllowedOrigin string
+	SupabaseJWKSURL string
 }
 
 var validLogLevels = map[string]bool{
@@ -21,12 +22,14 @@ var validLogLevels = map[string]bool{
 }
 
 func Load() (*Config, error) {
+	supabaseURL := os.Getenv("SUPABASE_URL")
 	cfg := &Config{
 		DatabaseURL:   os.Getenv("DATABASE_URL"),
 		Port:          getOrDefault("PORT", "8080"),
 		TMDBAPIKey:    os.Getenv("TMDB_API_KEY"),
 		LogLevel:      getOrDefault("LOG_LEVEL", "info"),
 		AllowedOrigin: os.Getenv("ALLOWED_ORIGIN"),
+		SupabaseJWKSURL: supabaseURL + "/auth/v1/.well-known/jwks.json",
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -39,6 +42,10 @@ func Load() (*Config, error) {
 
 	if cfg.AllowedOrigin == "" {
 		return nil, fmt.Errorf("ALLOWED_ORIGIN is required")
+	}
+
+	if supabaseURL == "" {
+		return nil, fmt.Errorf("SUPABASE_URL is required")
 	}
 
 	if !validLogLevels[cfg.LogLevel] {

@@ -9,7 +9,6 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getProfileByID = `-- name: GetProfileByID :one
@@ -31,7 +30,7 @@ SELECT EXISTS (
 ) AS taken
 `
 
-func (q *Queries) IsUsernameTaken(ctx context.Context, username pgtype.Text) (bool, error) {
+func (q *Queries) IsUsernameTaken(ctx context.Context, username *string) (bool, error) {
 	row := q.db.QueryRow(ctx, isUsernameTaken, username)
 	var taken bool
 	err := row.Scan(&taken)
@@ -46,8 +45,8 @@ RETURNING id, username, created_at
 `
 
 type SetUsernameParams struct {
-	ID       uuid.UUID   `json:"id"`
-	Username pgtype.Text `json:"username"`
+	ID       uuid.UUID `json:"id"`
+	Username *string   `json:"username"`
 }
 
 func (q *Queries) SetUsername(ctx context.Context, arg SetUsernameParams) (Profile, error) {

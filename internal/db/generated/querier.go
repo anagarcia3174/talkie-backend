@@ -8,7 +8,6 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -16,7 +15,7 @@ type Querier interface {
 	DeleteComment(ctx context.Context, id uuid.UUID) error
 	GetCommentByID(ctx context.Context, id uuid.UUID) (Comment, error)
 	GetProfileByID(ctx context.Context, id uuid.UUID) (Profile, error)
-	IsUsernameTaken(ctx context.Context, username pgtype.Text) (bool, error)
+	IsUsernameTaken(ctx context.Context, username *string) (bool, error)
 	ListCommentsByEpisode(ctx context.Context, arg ListCommentsByEpisodeParams) ([]ListCommentsByEpisodeRow, error)
 	ListCommentsByMovie(ctx context.Context, tmdbID int32) ([]ListCommentsByMovieRow, error)
 	SetUsername(ctx context.Context, arg SetUsernameParams) (Profile, error)

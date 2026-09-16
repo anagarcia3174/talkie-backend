@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createComment = `-- name: CreateComment :one
@@ -109,16 +108,16 @@ type ListCommentsByEpisodeParams struct {
 }
 
 type ListCommentsByEpisodeRow struct {
-	ID               uuid.UUID   `json:"id"`
-	UserID           uuid.UUID   `json:"user_id"`
-	TmdbMediaType    MediaType   `json:"tmdb_media_type"`
-	TmdbID           int32       `json:"tmdb_id"`
-	SeasonNumber     *int32      `json:"season_number"`
-	EpisodeNumber    *int32      `json:"episode_number"`
-	TimestampSeconds int32       `json:"timestamp_seconds"`
-	Body             string      `json:"body"`
-	CreatedAt        time.Time   `json:"created_at"`
-	Username         pgtype.Text `json:"username"`
+	ID               uuid.UUID `json:"id"`
+	UserID           uuid.UUID `json:"user_id"`
+	TmdbMediaType    MediaType `json:"tmdb_media_type"`
+	TmdbID           int32     `json:"tmdb_id"`
+	SeasonNumber     *int32    `json:"season_number"`
+	EpisodeNumber    *int32    `json:"episode_number"`
+	TimestampSeconds int32     `json:"timestamp_seconds"`
+	Body             string    `json:"body"`
+	CreatedAt        time.Time `json:"created_at"`
+	Username         *string   `json:"username"`
 }
 
 func (q *Queries) ListCommentsByEpisode(ctx context.Context, arg ListCommentsByEpisodeParams) ([]ListCommentsByEpisodeRow, error) {
@@ -164,16 +163,16 @@ ORDER BY c.timestamp_seconds ASC
 `
 
 type ListCommentsByMovieRow struct {
-	ID               uuid.UUID   `json:"id"`
-	UserID           uuid.UUID   `json:"user_id"`
-	TmdbMediaType    MediaType   `json:"tmdb_media_type"`
-	TmdbID           int32       `json:"tmdb_id"`
-	SeasonNumber     *int32      `json:"season_number"`
-	EpisodeNumber    *int32      `json:"episode_number"`
-	TimestampSeconds int32       `json:"timestamp_seconds"`
-	Body             string      `json:"body"`
-	CreatedAt        time.Time   `json:"created_at"`
-	Username         pgtype.Text `json:"username"`
+	ID               uuid.UUID `json:"id"`
+	UserID           uuid.UUID `json:"user_id"`
+	TmdbMediaType    MediaType `json:"tmdb_media_type"`
+	TmdbID           int32     `json:"tmdb_id"`
+	SeasonNumber     *int32    `json:"season_number"`
+	EpisodeNumber    *int32    `json:"episode_number"`
+	TimestampSeconds int32     `json:"timestamp_seconds"`
+	Body             string    `json:"body"`
+	CreatedAt        time.Time `json:"created_at"`
+	Username         *string   `json:"username"`
 }
 
 func (q *Queries) ListCommentsByMovie(ctx context.Context, tmdbID int32) ([]ListCommentsByMovieRow, error) {

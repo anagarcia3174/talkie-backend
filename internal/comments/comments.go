@@ -32,7 +32,7 @@ type Comment struct {
 type CommentWithUsername struct {
 	ID               string    `json:"id"`
 	UserID           string    `json:"user_id"`
-	Username         string    `json:"username"`
+	Username         *string    `json:"username"`
 	TMDBMediaType    MediaType `json:"tmdb_media_type"`
 	TMDBID           int32     `json:"tmdb_id"`
 	SeasonNumber     *int32    `json:"season_number"`
