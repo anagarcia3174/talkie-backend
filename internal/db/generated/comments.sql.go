@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createComment = `-- name: CreateComment :one
@@ -91,9 +92,9 @@ func (q *Queries) GetCommentByID(ctx context.Context, id uuid.UUID) (Comment, er
 const listCommentsByEpisode = `-- name: ListCommentsByEpisode :many
 SELECT c.id, c.user_id, c.tmdb_media_type, c.tmdb_id, c.season_number,
        c.episode_number, c.timestamp_seconds, c.body, c.created_at,
-       u.username
+       p.username
 FROM comments c
-JOIN users u ON u.id = c.user_id
+JOIN profiles p ON p.id = c.user_id
 WHERE c.tmdb_media_type = 'tv'
   AND c.tmdb_id = $1
   AND c.season_number = $2
@@ -108,16 +109,16 @@ type ListCommentsByEpisodeParams struct {
 }
 
 type ListCommentsByEpisodeRow struct {
-	ID               uuid.UUID `json:"id"`
-	UserID           uuid.UUID `json:"user_id"`
-	TmdbMediaType    MediaType `json:"tmdb_media_type"`
-	TmdbID           int32     `json:"tmdb_id"`
-	SeasonNumber     *int32    `json:"season_number"`
-	EpisodeNumber    *int32    `json:"episode_number"`
-	TimestampSeconds int32     `json:"timestamp_seconds"`
-	Body             string    `json:"body"`
-	CreatedAt        time.Time `json:"created_at"`
-	Username         string    `json:"username"`
+	ID               uuid.UUID   `json:"id"`
+	UserID           uuid.UUID   `json:"user_id"`
+	TmdbMediaType    MediaType   `json:"tmdb_media_type"`
+	TmdbID           int32       `json:"tmdb_id"`
+	SeasonNumber     *int32      `json:"season_number"`
+	EpisodeNumber    *int32      `json:"episode_number"`
+	TimestampSeconds int32       `json:"timestamp_seconds"`
+	Body             string      `json:"body"`
+	CreatedAt        time.Time   `json:"created_at"`
+	Username         pgtype.Text `json:"username"`
 }
 
 func (q *Queries) ListCommentsByEpisode(ctx context.Context, arg ListCommentsByEpisodeParams) ([]ListCommentsByEpisodeRow, error) {
@@ -154,25 +155,25 @@ func (q *Queries) ListCommentsByEpisode(ctx context.Context, arg ListCommentsByE
 const listCommentsByMovie = `-- name: ListCommentsByMovie :many
 SELECT c.id, c.user_id, c.tmdb_media_type, c.tmdb_id, c.season_number,
        c.episode_number, c.timestamp_seconds, c.body, c.created_at,
-       u.username
+       p.username
 FROM comments c
-JOIN users u ON u.id = c.user_id
+JOIN profiles p ON p.id = c.user_id
 WHERE c.tmdb_media_type = 'movie'
   AND c.tmdb_id = $1
 ORDER BY c.timestamp_seconds ASC
 `
 
 type ListCommentsByMovieRow struct {
-	ID               uuid.UUID `json:"id"`
-	UserID           uuid.UUID `json:"user_id"`
-	TmdbMediaType    MediaType `json:"tmdb_media_type"`
-	TmdbID           int32     `json:"tmdb_id"`
-	SeasonNumber     *int32    `json:"season_number"`
-	EpisodeNumber    *int32    `json:"episode_number"`
-	TimestampSeconds int32     `json:"timestamp_seconds"`
-	Body             string    `json:"body"`
-	CreatedAt        time.Time `json:"created_at"`
-	Username         string    `json:"username"`
+	ID               uuid.UUID   `json:"id"`
+	UserID           uuid.UUID   `json:"user_id"`
+	TmdbMediaType    MediaType   `json:"tmdb_media_type"`
+	TmdbID           int32       `json:"tmdb_id"`
+	SeasonNumber     *int32      `json:"season_number"`
+	EpisodeNumber    *int32      `json:"episode_number"`
+	TimestampSeconds int32       `json:"timestamp_seconds"`
+	Body             string      `json:"body"`
+	CreatedAt        time.Time   `json:"created_at"`
+	Username         pgtype.Text `json:"username"`
 }
 
 func (q *Queries) ListCommentsByMovie(ctx context.Context, tmdbID int32) ([]ListCommentsByMovieRow, error) {

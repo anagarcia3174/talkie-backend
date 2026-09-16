@@ -8,23 +8,18 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
 	CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error)
-	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
-	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteComment(ctx context.Context, id uuid.UUID) error
-	DeleteExpiredSessions(ctx context.Context) error
-	GetActiveSessionByTokenHash(ctx context.Context, tokenHash string) (Session, error)
 	GetCommentByID(ctx context.Context, id uuid.UUID) (Comment, error)
-	GetUserByEmail(ctx context.Context, email string) (User, error)
-	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
-	GetUserByUsername(ctx context.Context, username string) (User, error)
+	GetProfileByID(ctx context.Context, id uuid.UUID) (Profile, error)
+	IsUsernameTaken(ctx context.Context, username pgtype.Text) (bool, error)
 	ListCommentsByEpisode(ctx context.Context, arg ListCommentsByEpisodeParams) ([]ListCommentsByEpisodeRow, error)
 	ListCommentsByMovie(ctx context.Context, tmdbID int32) ([]ListCommentsByMovieRow, error)
-	RevokeAllSessionsForUser(ctx context.Context, userID uuid.UUID) error
-	RevokeSessionByTokenHash(ctx context.Context, tokenHash string) error
+	SetUsername(ctx context.Context, arg SetUsernameParams) (Profile, error)
 	UpdateComment(ctx context.Context, arg UpdateCommentParams) (Comment, error)
 }
 

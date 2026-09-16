@@ -155,6 +155,12 @@ type Comment struct {
 	CreatedAt        time.Time `json:"created_at"`
 }
 
+type Profile struct {
+	ID        uuid.UUID   `json:"id"`
+	Username  pgtype.Text `json:"username"`
+	CreatedAt time.Time   `json:"created_at"`
+}
+
 type Report struct {
 	ID             uuid.UUID    `json:"id"`
 	CommentID      uuid.UUID    `json:"comment_id"`
@@ -163,21 +169,4 @@ type Report struct {
 	ReasonDetail   pgtype.Text  `json:"reason_detail"`
 	ReportStatus   ReportStatus `json:"report_status"`
 	CreatedAt      time.Time    `json:"created_at"`
-}
-
-type Session struct {
-	ID        uuid.UUID          `json:"id"`
-	UserID    uuid.UUID          `json:"user_id"`
-	TokenHash string             `json:"token_hash"`
-	CreatedAt time.Time          `json:"created_at"`
-	ExpiresAt time.Time          `json:"expires_at"`
-	RevokedAt pgtype.Timestamptz `json:"revoked_at"`
-}
-
-type User struct {
-	ID           uuid.UUID `json:"id"`
-	Email        string    `json:"email"`
-	Username     string    `json:"username"`
-	PasswordHash string    `json:"password_hash"`
-	CreatedAt    time.Time `json:"created_at"`
 }
