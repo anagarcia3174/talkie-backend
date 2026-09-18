@@ -181,7 +181,7 @@ func (c *Client) GetMovieDetails(ctx context.Context, tmdbID int) (MovieDetails,
 	return MovieDetails{
 		TMDBID:         raw.ID,
 		Title:          raw.Title,
-		ReleaseYear:    yearFromDate(raw.ReleaseDate),
+		ReleaseDate:    raw.ReleaseDate,
 		RuntimeMinutes: raw.Runtime,
 		PosterPath:     raw.PosterPath,
 		Overview:       raw.Overview,

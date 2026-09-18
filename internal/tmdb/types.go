@@ -19,7 +19,7 @@ type SearchResult struct {
 type MovieDetails struct {
 	TMDBID         int    `json:"tmdb_id"`
 	Title          string `json:"title"`
-	ReleaseYear    int    `json:"release_year,omitempty"`
+	ReleaseDate    string `json:"release_date,omitempty"`
 	RuntimeMinutes int    `json:"runtime_minutes,omitempty"`
 	PosterPath     string `json:"poster_path,omitempty"`
 	Overview       string `json:"overview,omitempty"`
