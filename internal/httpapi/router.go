@@ -17,6 +17,7 @@ type RouterDeps struct {
 	AuthHandler    *AuthHandler
 	MediaHandler   *MediaHandler
 	CommentHandler *CommentHandler
+	ReportHandler  *ReportHandler
 	Verifier       *auth.Verifier
 	AllowedOrigin  string
 }
@@ -59,6 +60,9 @@ func NewRouter(deps RouterDeps) http.Handler {
 		r.Post("/comments", deps.CommentHandler.Create)
 		r.Patch("/comments/{comment_id}", deps.CommentHandler.Update)
 		r.Delete("/comments/{comment_id}", deps.CommentHandler.Delete)
+		r.With(
+			httprate.LimitBy(10, time.Minute, clientIPKey),
+		).Post("/comments/{comment_id}/reports", deps.ReportHandler.Create)
 		r.Patch("/me", deps.AuthHandler.UpdateMe)
 		r.With(
 			httprate.LimitBy(5, time.Minute, clientIPKey),

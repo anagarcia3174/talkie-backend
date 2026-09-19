@@ -17,6 +17,7 @@ import (
 	dbgen "github.com/anagarcia3174/talkie-backend/internal/db/generated"
 	"github.com/anagarcia3174/talkie-backend/internal/httpapi"
 	"github.com/anagarcia3174/talkie-backend/internal/logging"
+	"github.com/anagarcia3174/talkie-backend/internal/reports"
 	"github.com/anagarcia3174/talkie-backend/internal/tmdb"
 	"github.com/joho/godotenv"
 )
@@ -61,11 +62,14 @@ func main() {
 	mediaHandler := httpapi.NewMediaHandler(tmdbClient, logger)
 	commentSvc := comments.NewService(queries)
 	commentHandler := httpapi.NewCommentHandler(commentSvc, logger)
+	reportSvc := reports.NewService(queries)
+	reportHandler := httpapi.NewReportHandler(reportSvc, logger)
 	router := httpapi.NewRouter(httpapi.RouterDeps{
 		Logger:         logger,
 		AuthHandler:    authHandler,
 		MediaHandler:   mediaHandler,
 		CommentHandler: commentHandler,
+		ReportHandler:  reportHandler,
 		Verifier:       verifier,
 		AllowedOrigin:  cfg.AllowedOrigin,
 	})

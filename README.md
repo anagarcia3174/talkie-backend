@@ -70,6 +70,7 @@ generates the Go types and query methods around it.
 | POST | `/comments` | required | Post a comment |
 | PATCH | `/comments/{comment_id}` | required, owner only | Edit a comment's body/timestamp |
 | DELETE | `/comments/{comment_id}` | required, owner only | Delete a comment |
+| POST | `/comments/{comment_id}/reports` | required | Report a comment (`reason`: spam, harassment, inappropriate, spoiler, other; optional `detail`, max 500 chars). 201 on success, 404 unknown comment, 403 own comment, 409 already reported |
 
 **Reading is intentionally open.** Only posting, editing, and deleting a
 comment require a JWT. This is a deliberate product decision: Talkie's

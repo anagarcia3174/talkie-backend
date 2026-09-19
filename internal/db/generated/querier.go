@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error)
+	CreateReport(ctx context.Context, arg CreateReportParams) (Report, error)
 	DeleteComment(ctx context.Context, id uuid.UUID) error
 	GetCommentByID(ctx context.Context, id uuid.UUID) (Comment, error)
 	GetProfileByID(ctx context.Context, id uuid.UUID) (Profile, error)
