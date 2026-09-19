@@ -4,13 +4,17 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/anagarcia3174/talkie-backend/internal/auth"
 )
 
 type contextKey string
 
-const userIDContextKey contextKey = "userID"
+const (
+	userIDContextKey     contextKey = "userID"
+	lastSignInContextKey contextKey = "lastSignIn"
+)
 
 func UserIDFromContext(ctx context.Context) (string, bool) {
 	userID, ok := ctx.Value(userIDContextKey).(string)
@@ -34,6 +38,7 @@ func AuthMiddleware(verifier *auth.Verifier) func(http.Handler) http.Handler {
 			}
 
 			ctx := context.WithValue(r.Context(), userIDContextKey, claims.Subject)
+			ctx = context.WithValue(ctx, lastSignInContextKey, claims.LastSignInAt())
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -45,6 +50,19 @@ func OriginMiddleware(allowedOrigin string) func(http.Handler) http.Handler {
 			origin := r.Header.Get("Origin")
 			if origin != "" && origin != allowedOrigin {
 				writeError(w, http.StatusForbidden, "invalid origin")
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func RequireRecentSignIn(window time.Duration) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			lastSignIn, ok := r.Context().Value(lastSignInContextKey).(time.Time)
+			if !ok || lastSignIn.IsZero() || time.Since(lastSignIn) > window {
+				writeError(w, http.StatusForbidden, "recent sign-in required")
 				return
 			}
 			next.ServeHTTP(w, r)

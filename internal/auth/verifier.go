@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/golang-jwt/jwt/v5"
@@ -11,9 +12,28 @@ import (
 
 var ErrInvalidToken = errors.New("invalid token")
 
+type AMREntry struct {
+	Method    string `json:"method"`
+	Timestamp int64  `json:"timestamp"`
+}
+
 type Claims struct {
 	jwt.RegisteredClaims
-	Email string `json:"email"`
+	Email string     `json:"email"`
+	AMR   []AMREntry `json:"amr"`
+}
+
+func (c *Claims) LastSignInAt() time.Time {
+	var latest int64
+	for _, entry := range c.AMR {
+		if entry.Timestamp > latest {
+			latest = entry.Timestamp
+		}
+	}
+	if latest == 0 {
+		return time.Time{}
+	}
+	return time.Unix(latest, 0)
 }
 
 type Verifier struct {

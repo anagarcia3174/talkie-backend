@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"regexp"
 	"strings"
 	"time"
@@ -26,12 +27,38 @@ var (
 
 var usernamePattern = regexp.MustCompile(`^[a-zA-Z0-9_]{3,30}$`)
 
-type Service struct {
-	profiles db.Querier
+
+type UserDeleter interface {
+	DeleteUser(ctx context.Context, userID string) error
+}
+type AppleRevoker interface {
+	RevokeWithAuthorizationCode(ctx context.Context, code string) error
 }
 
-func NewService(profiles db.Querier) *Service {
-	return &Service{profiles: profiles}
+type Service struct {
+	profiles db.Querier
+	users    UserDeleter
+	apple    AppleRevoker
+	logger   *slog.Logger
+}
+
+func NewService(profiles db.Querier, users UserDeleter, apple AppleRevoker, logger *slog.Logger) *Service {
+	return &Service{profiles: profiles, users: users, apple: apple, logger: logger}
+}
+
+func (s *Service) DeleteAccount(ctx context.Context, userID, appleAuthCode string) error {
+	id, err := uuid.Parse(userID)
+	if err != nil {
+		return ErrInvalidCredentials
+	}
+
+	if appleAuthCode != "" {
+		if err := s.apple.RevokeWithAuthorizationCode(ctx, appleAuthCode); err != nil {
+			s.logger.Error("apple token revocation failed", "error", err, "user_id", id.String())
+		}
+	}
+
+	return s.users.DeleteUser(ctx, id.String())
 }
 
 func (s *Service) GetCurrentUser(ctx context.Context, userID string) (User, error) {

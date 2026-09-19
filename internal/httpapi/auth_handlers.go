@@ -3,6 +3,7 @@ package httpapi
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 
@@ -16,6 +17,10 @@ type AuthHandler struct {
 
 type updateMeRequest struct {
 	Username string `json:"username"`
+}
+
+type deleteMeRequest struct {
+	AppleAuthorizationCode string `json:"apple_authorization_code"`
 }
 
 func NewAuthHandler(svc *auth.Service, logger *slog.Logger) *AuthHandler {
@@ -75,4 +80,32 @@ func (h *AuthHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, user)
+}
+
+func (h *AuthHandler) DeleteMe(w http.ResponseWriter, r *http.Request) {
+	userID, ok := UserIDFromContext(r.Context())
+	if !ok {
+		h.logger.Error("userID missing from context on protected route")
+		writeError(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	var req deleteMeRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<13)).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := h.svc.DeleteAccount(r.Context(), userID, req.AppleAuthorizationCode); err != nil {
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			writeError(w, http.StatusUnauthorized, "invalid credentials")
+			return
+		}
+		h.logger.Error("delete account failed", "error", err, "user_id", userID)
+		writeError(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	h.logger.Info("account deleted", "user_id", userID)
+	w.WriteHeader(http.StatusNoContent)
 }

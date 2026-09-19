@@ -12,6 +12,12 @@ type Config struct {
 	LogLevel      string
 	AllowedOrigin string
 	SupabaseJWKSURL string
+	SupabaseURL     string
+	SupabaseSecretKey string
+	AppleTeamID       string
+	AppleKeyID        string
+	AppleClientID     string
+	ApplePrivateKey   string
 }
 
 var validLogLevels = map[string]bool{
@@ -30,6 +36,12 @@ func Load() (*Config, error) {
 		LogLevel:      getOrDefault("LOG_LEVEL", "info"),
 		AllowedOrigin: os.Getenv("ALLOWED_ORIGIN"),
 		SupabaseJWKSURL: supabaseURL + "/auth/v1/.well-known/jwks.json",
+		SupabaseURL:     supabaseURL,
+		SupabaseSecretKey: os.Getenv("SUPABASE_SECRET_KEY"),
+		AppleTeamID:       os.Getenv("APPLE_TEAM_ID"),
+		AppleKeyID:        os.Getenv("APPLE_KEY_ID"),
+		AppleClientID:     os.Getenv("APPLE_CLIENT_ID"),
+		ApplePrivateKey:   os.Getenv("APPLE_PRIVATE_KEY"),
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -46,6 +58,18 @@ func Load() (*Config, error) {
 
 	if supabaseURL == "" {
 		return nil, fmt.Errorf("SUPABASE_URL is required")
+	}
+
+	for name, value := range map[string]string{
+		"SUPABASE_SECRET_KEY": cfg.SupabaseSecretKey,
+		"APPLE_TEAM_ID":       cfg.AppleTeamID,
+		"APPLE_KEY_ID":        cfg.AppleKeyID,
+		"APPLE_CLIENT_ID":     cfg.AppleClientID,
+		"APPLE_PRIVATE_KEY":   cfg.ApplePrivateKey,
+	} {
+		if value == "" {
+			return nil, fmt.Errorf("%s is required", name)
+		}
 	}
 
 	if !validLogLevels[cfg.LogLevel] {

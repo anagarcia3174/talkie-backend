@@ -60,6 +60,10 @@ func NewRouter(deps RouterDeps) http.Handler {
 		r.Patch("/comments/{comment_id}", deps.CommentHandler.Update)
 		r.Delete("/comments/{comment_id}", deps.CommentHandler.Delete)
 		r.Patch("/me", deps.AuthHandler.UpdateMe)
+		r.With(
+			httprate.LimitBy(5, time.Minute, clientIPKey),
+			RequireRecentSignIn(5*time.Minute),
+		).Delete("/me", deps.AuthHandler.DeleteMe)
 	})
 
 	return r

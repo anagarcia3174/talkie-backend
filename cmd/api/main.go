@@ -49,7 +49,13 @@ func main() {
 		logger.Error("error setting up jwt verifier", "error", err)
 		os.Exit(1)
 	}
-	authSvc := auth.NewService(queries)
+	adminClient := auth.NewAdminClient(cfg.SupabaseURL, cfg.SupabaseSecretKey)
+	appleClient, err := auth.NewAppleClient(cfg.AppleTeamID, cfg.AppleKeyID, cfg.AppleClientID, cfg.ApplePrivateKey)
+	if err != nil {
+		logger.Error("error setting up apple client", "error", err)
+		os.Exit(1)
+	}
+	authSvc := auth.NewService(queries, adminClient, appleClient, logger)
 	authHandler := httpapi.NewAuthHandler(authSvc, logger)
 	tmdbClient := tmdb.NewClient(cfg.TMDBAPIKey)
 	mediaHandler := httpapi.NewMediaHandler(tmdbClient, logger)
