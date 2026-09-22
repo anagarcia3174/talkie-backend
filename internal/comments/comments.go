@@ -57,6 +57,8 @@ type UpdateCommentInput struct {
 	Body             string
 }
 
+const MaxCommentBodyLength = 280
+
 var (
 	ErrInvalidInput = errors.New("invalid input")
 	ErrNotFound     = errors.New("comment not found")
@@ -75,7 +77,7 @@ func (s *Service) Create(ctx context.Context, in CreateCommentInput) (Comment, e
 	if !validMediaReference(in.TMDBMediaType, in.TMDBID, in.SeasonNumber, in.EpisodeNumber) {
 		return Comment{}, ErrInvalidInput
 	}
-	if in.TimestampSeconds < 0 || in.Body == "" {
+	if in.TimestampSeconds < 0 || in.Body == "" || len(in.Body) > MaxCommentBodyLength {
 		return Comment{}, ErrInvalidInput
 	}
 
@@ -150,7 +152,7 @@ func (s *Service) ListByEpisode(ctx context.Context, tmdbID, season, episode int
 }
 
 func (s *Service) Update(ctx context.Context, commentID, userID string, in UpdateCommentInput) (Comment, error) {
-	if in.TimestampSeconds < 0 || in.Body == "" {
+	if in.TimestampSeconds < 0 || in.Body == "" || len(in.Body) > MaxCommentBodyLength {
 		return Comment{}, ErrInvalidInput
 	}
 

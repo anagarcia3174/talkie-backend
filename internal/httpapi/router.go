@@ -57,7 +57,9 @@ func NewRouter(deps RouterDeps) http.Handler {
 	r.Group(func(r chi.Router) {
 		r.Use(OriginMiddleware(deps.AllowedOrigin))
 		r.Use(AuthMiddleware(deps.Verifier))
-		r.Post("/comments", deps.CommentHandler.Create)
+		r.With(
+			httprate.LimitBy(15, time.Minute, clientIPKey),
+		).Post("/comments", deps.CommentHandler.Create)
 		r.Patch("/comments/{comment_id}", deps.CommentHandler.Update)
 		r.Delete("/comments/{comment_id}", deps.CommentHandler.Delete)
 		r.With(
