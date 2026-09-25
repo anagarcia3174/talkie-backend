@@ -9,7 +9,6 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-
 type MediaHandler struct {
 	client *tmdb.Client
 	logger *slog.Logger

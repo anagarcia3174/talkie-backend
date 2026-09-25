@@ -98,6 +98,7 @@ WHERE c.tmdb_media_type = 'tv'
   AND c.tmdb_id = $1
   AND c.season_number = $2
   AND c.episode_number = $3
+  AND p.banned_at IS NULL
 ORDER BY c.timestamp_seconds ASC
 `
 
@@ -159,6 +160,7 @@ FROM comments c
 JOIN profiles p ON p.id = c.user_id
 WHERE c.tmdb_media_type = 'movie'
   AND c.tmdb_id = $1
+  AND p.banned_at IS NULL
 ORDER BY c.timestamp_seconds ASC
 `
 

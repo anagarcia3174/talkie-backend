@@ -25,7 +25,6 @@ type MovieDetails struct {
 	Overview       string `json:"overview,omitempty"`
 }
 
-
 type TVShowDetails struct {
 	TMDBID       int             `json:"tmdb_id"`
 	Name         string          `json:"name"`
@@ -34,7 +33,6 @@ type TVShowDetails struct {
 	Overview     string          `json:"overview,omitempty"`
 	Seasons      []SeasonSummary `json:"seasons"`
 }
-
 
 type SeasonSummary struct {
 	SeasonNumber int    `json:"season_number"`

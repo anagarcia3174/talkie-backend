@@ -13,3 +13,8 @@ UPDATE profiles
 SET username = $2
 WHERE id = $1
 RETURNING id, username, created_at;
+
+-- name: IsUserBanned :one
+SELECT EXISTS (
+    SELECT 1 FROM profiles WHERE id = $1 AND banned_at IS NOT NULL
+) AS banned;

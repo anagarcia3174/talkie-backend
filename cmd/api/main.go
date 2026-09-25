@@ -71,6 +71,7 @@ func main() {
 		CommentHandler: commentHandler,
 		ReportHandler:  reportHandler,
 		Verifier:       verifier,
+		BanChecker:     queries,
 		AllowedOrigin:  cfg.AllowedOrigin,
 	})
 

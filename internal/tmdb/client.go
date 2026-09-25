@@ -59,7 +59,6 @@ func (c *Client) doGet(ctx context.Context, path string, query url.Values, dest 
 	return nil
 }
 
-
 type rawMultiSearchItem struct {
 	ID           int    `json:"id"`
 	MediaType    string `json:"media_type"`
@@ -130,7 +129,6 @@ func yearFromDate(date string) int {
 	return year
 }
 
-
 func (c *Client) SearchMulti(ctx context.Context, query string) ([]SearchResult, error) {
 	var raw rawSearchResponse
 	q := url.Values{"query": {query}}
@@ -147,7 +145,7 @@ func (c *Client) SearchMulti(ctx context.Context, query string) ([]SearchResult,
 		case "tv":
 			mt = MediaTypeTV
 		default:
-		
+
 			continue
 		}
 

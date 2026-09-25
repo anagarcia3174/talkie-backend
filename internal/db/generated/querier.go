@@ -15,11 +15,12 @@ type Querier interface {
 	CreateReport(ctx context.Context, arg CreateReportParams) (Report, error)
 	DeleteComment(ctx context.Context, id uuid.UUID) error
 	GetCommentByID(ctx context.Context, id uuid.UUID) (Comment, error)
-	GetProfileByID(ctx context.Context, id uuid.UUID) (Profile, error)
+	GetProfileByID(ctx context.Context, id uuid.UUID) (GetProfileByIDRow, error)
+	IsUserBanned(ctx context.Context, id uuid.UUID) (bool, error)
 	IsUsernameTaken(ctx context.Context, username *string) (bool, error)
 	ListCommentsByEpisode(ctx context.Context, arg ListCommentsByEpisodeParams) ([]ListCommentsByEpisodeRow, error)
 	ListCommentsByMovie(ctx context.Context, tmdbID int32) ([]ListCommentsByMovieRow, error)
-	SetUsername(ctx context.Context, arg SetUsernameParams) (Profile, error)
+	SetUsername(ctx context.Context, arg SetUsernameParams) (SetUsernameRow, error)
 	UpdateComment(ctx context.Context, arg UpdateCommentParams) (Comment, error)
 }
 

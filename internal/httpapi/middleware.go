@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/anagarcia3174/talkie-backend/internal/auth"
+	"github.com/google/uuid"
 )
 
 type contextKey string
@@ -63,6 +64,38 @@ func RequireRecentSignIn(window time.Duration) func(http.Handler) http.Handler {
 			lastSignIn, ok := r.Context().Value(lastSignInContextKey).(time.Time)
 			if !ok || lastSignIn.IsZero() || time.Since(lastSignIn) > window {
 				writeError(w, http.StatusForbidden, "recent sign-in required")
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+type BanChecker interface {
+	IsUserBanned(ctx context.Context, id uuid.UUID) (bool, error)
+}
+
+func RequireNotBanned(checker BanChecker) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userID, ok := UserIDFromContext(r.Context())
+			if !ok {
+				writeError(w, http.StatusUnauthorized, "unauthorized")
+				return
+			}
+			id, err := uuid.Parse(userID)
+			if err != nil {
+				writeError(w, http.StatusUnauthorized, "unauthorized")
+				return
+			}
+
+			banned, err := checker.IsUserBanned(r.Context(), id)
+			if err != nil {
+				writeError(w, http.StatusInternalServerError, "internal server error")
+				return
+			}
+			if banned {
+				writeError(w, http.StatusForbidden, "account suspended")
 				return
 			}
 			next.ServeHTTP(w, r)

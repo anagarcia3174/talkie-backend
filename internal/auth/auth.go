@@ -9,13 +9,14 @@ import (
 	"time"
 
 	db "github.com/anagarcia3174/talkie-backend/internal/db/generated"
+	"github.com/anagarcia3174/talkie-backend/internal/moderation"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
 type User struct {
 	ID        string    `json:"id"`
-	Username  *string    `json:"username"`
+	Username  *string   `json:"username"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -23,10 +24,10 @@ var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrInvalidUsername    = errors.New("invalid username")
 	ErrUsernameTaken      = errors.New("username taken")
+	ErrUsernameNotAllowed = errors.New("username not allowed")
 )
 
 var usernamePattern = regexp.MustCompile(`^[a-zA-Z0-9_]{3,30}$`)
-
 
 type UserDeleter interface {
 	DeleteUser(ctx context.Context, userID string) error
@@ -87,6 +88,9 @@ func (s *Service) SetUsername(ctx context.Context, userID, username string) (Use
 	username = strings.TrimSpace(username)
 	if !usernamePattern.MatchString(username) {
 		return User{}, ErrInvalidUsername
+	}
+	if moderation.ContainsObjectionable(username) {
+		return User{}, ErrUsernameNotAllowed
 	}
 
 	taken, err := s.profiles.IsUsernameTaken(ctx, &username)

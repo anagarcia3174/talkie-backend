@@ -64,6 +64,8 @@ func (h *CommentHandler) Create(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, comments.ErrInvalidInput):
 			writeError(w, http.StatusBadRequest, "invalid input")
+		case errors.Is(err, comments.ErrObjectionable):
+			writeError(w, http.StatusUnprocessableEntity, "objectionable content")
 		default:
 			h.logger.Error("create comment failed", "error", err)
 			writeError(w, http.StatusInternalServerError, "internal server error")
@@ -145,6 +147,8 @@ func (h *CommentHandler) Update(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, comments.ErrInvalidInput):
 			writeError(w, http.StatusBadRequest, "invalid input")
+		case errors.Is(err, comments.ErrObjectionable):
+			writeError(w, http.StatusUnprocessableEntity, "objectionable content")
 		case errors.Is(err, comments.ErrNotFound):
 			writeError(w, http.StatusNotFound, "comment not found")
 		case errors.Is(err, comments.ErrForbidden):

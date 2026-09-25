@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -17,11 +18,30 @@ FROM profiles
 WHERE id = $1
 `
 
-func (q *Queries) GetProfileByID(ctx context.Context, id uuid.UUID) (Profile, error) {
+type GetProfileByIDRow struct {
+	ID        uuid.UUID `json:"id"`
+	Username  *string   `json:"username"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (q *Queries) GetProfileByID(ctx context.Context, id uuid.UUID) (GetProfileByIDRow, error) {
 	row := q.db.QueryRow(ctx, getProfileByID, id)
-	var i Profile
+	var i GetProfileByIDRow
 	err := row.Scan(&i.ID, &i.Username, &i.CreatedAt)
 	return i, err
+}
+
+const isUserBanned = `-- name: IsUserBanned :one
+SELECT EXISTS (
+    SELECT 1 FROM profiles WHERE id = $1 AND banned_at IS NOT NULL
+) AS banned
+`
+
+func (q *Queries) IsUserBanned(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, isUserBanned, id)
+	var banned bool
+	err := row.Scan(&banned)
+	return banned, err
 }
 
 const isUsernameTaken = `-- name: IsUsernameTaken :one
@@ -49,9 +69,15 @@ type SetUsernameParams struct {
 	Username *string   `json:"username"`
 }
 
-func (q *Queries) SetUsername(ctx context.Context, arg SetUsernameParams) (Profile, error) {
+type SetUsernameRow struct {
+	ID        uuid.UUID `json:"id"`
+	Username  *string   `json:"username"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (q *Queries) SetUsername(ctx context.Context, arg SetUsernameParams) (SetUsernameRow, error) {
 	row := q.db.QueryRow(ctx, setUsername, arg.ID, arg.Username)
-	var i Profile
+	var i SetUsernameRow
 	err := row.Scan(&i.ID, &i.Username, &i.CreatedAt)
 	return i, err
 }

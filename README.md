@@ -24,6 +24,23 @@ likes), user blocking, and OAuth. These were cut for scope discipline, not
 because they're bad ideas — they're what caused the previous version to
 stall.
 
+## Moderation
+
+- **Content filter:** comment bodies and usernames are checked against a
+  small slur / self-harm list in `internal/moderation` (whole-word, with
+  leetspeak and spacing normalization). Rejections return `422`.
+- **Bans:** a banned user gets `403 account suspended` on create/edit
+  comment, report, and `PATCH /me`, and their comments are hidden from
+  comment lists. They can still delete their comments and their account.
+  There's no admin UI yet — ban/unban from the Supabase SQL editor:
+
+```sql
+-- ban
+UPDATE public.profiles SET banned_at = now() WHERE username = '<username>';
+-- unban
+UPDATE public.profiles SET banned_at = NULL WHERE username = '<username>';
+```
+
 ---
 
 ## Tech Stack

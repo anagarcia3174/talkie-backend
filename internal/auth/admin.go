@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-
 type AdminClient struct {
 	baseURL   string
 	secretKey string

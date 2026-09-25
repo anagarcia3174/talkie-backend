@@ -6,6 +6,7 @@ import (
 	"time"
 
 	db "github.com/anagarcia3174/talkie-backend/internal/db/generated"
+	"github.com/anagarcia3174/talkie-backend/internal/moderation"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -32,7 +33,7 @@ type Comment struct {
 type CommentWithUsername struct {
 	ID               string    `json:"id"`
 	UserID           string    `json:"user_id"`
-	Username         *string    `json:"username"`
+	Username         *string   `json:"username"`
 	TMDBMediaType    MediaType `json:"tmdb_media_type"`
 	TMDBID           int32     `json:"tmdb_id"`
 	SeasonNumber     *int32    `json:"season_number"`
@@ -60,9 +61,10 @@ type UpdateCommentInput struct {
 const MaxCommentBodyLength = 280
 
 var (
-	ErrInvalidInput = errors.New("invalid input")
-	ErrNotFound     = errors.New("comment not found")
-	ErrForbidden    = errors.New("not your comment")
+	ErrInvalidInput  = errors.New("invalid input")
+	ErrNotFound      = errors.New("comment not found")
+	ErrForbidden     = errors.New("not your comment")
+	ErrObjectionable = errors.New("objectionable content")
 )
 
 type Service struct {
@@ -79,6 +81,9 @@ func (s *Service) Create(ctx context.Context, in CreateCommentInput) (Comment, e
 	}
 	if in.TimestampSeconds < 0 || in.Body == "" || len(in.Body) > MaxCommentBodyLength {
 		return Comment{}, ErrInvalidInput
+	}
+	if moderation.ContainsObjectionable(in.Body) {
+		return Comment{}, ErrObjectionable
 	}
 
 	userID, err := uuid.Parse(in.UserID)
@@ -155,6 +160,9 @@ func (s *Service) Update(ctx context.Context, commentID, userID string, in Updat
 	if in.TimestampSeconds < 0 || in.Body == "" || len(in.Body) > MaxCommentBodyLength {
 		return Comment{}, ErrInvalidInput
 	}
+	if moderation.ContainsObjectionable(in.Body) {
+		return Comment{}, ErrObjectionable
+	}
 
 	id, err := s.checkOwnership(ctx, commentID, userID)
 	if err != nil {
@@ -213,14 +221,6 @@ func toComment(row db.Comment) Comment {
 		Body:             row.Body,
 		CreatedAt:        row.CreatedAt,
 	}
-}
-
-func toComments(rows []db.Comment) []Comment {
-	comments := make([]Comment, 0, len(rows))
-	for _, row := range rows {
-		comments = append(comments, toComment(row))
-	}
-	return comments
 }
 
 func validMediaReference(mediaType MediaType, tmdbID int32, season, episode *int32) bool {

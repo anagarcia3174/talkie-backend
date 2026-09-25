@@ -156,9 +156,10 @@ type Comment struct {
 }
 
 type Profile struct {
-	ID        uuid.UUID `json:"id"`
-	Username  *string   `json:"username"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        uuid.UUID          `json:"id"`
+	Username  *string            `json:"username"`
+	CreatedAt time.Time          `json:"created_at"`
+	BannedAt  pgtype.Timestamptz `json:"banned_at"`
 }
 
 type Report struct {

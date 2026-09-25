@@ -6,13 +6,13 @@ import (
 )
 
 type Config struct {
-	DatabaseURL   string
-	Port          string
-	TMDBAPIKey    string
-	LogLevel      string
-	AllowedOrigin string
-	SupabaseJWKSURL string
-	SupabaseURL     string
+	DatabaseURL       string
+	Port              string
+	TMDBAPIKey        string
+	LogLevel          string
+	AllowedOrigin     string
+	SupabaseJWKSURL   string
+	SupabaseURL       string
 	SupabaseSecretKey string
 	AppleTeamID       string
 	AppleKeyID        string
@@ -30,13 +30,13 @@ var validLogLevels = map[string]bool{
 func Load() (*Config, error) {
 	supabaseURL := os.Getenv("SUPABASE_URL")
 	cfg := &Config{
-		DatabaseURL:   os.Getenv("DATABASE_URL"),
-		Port:          getOrDefault("PORT", "8080"),
-		TMDBAPIKey:    os.Getenv("TMDB_API_KEY"),
-		LogLevel:      getOrDefault("LOG_LEVEL", "info"),
-		AllowedOrigin: os.Getenv("ALLOWED_ORIGIN"),
-		SupabaseJWKSURL: supabaseURL + "/auth/v1/.well-known/jwks.json",
-		SupabaseURL:     supabaseURL,
+		DatabaseURL:       os.Getenv("DATABASE_URL"),
+		Port:              getOrDefault("PORT", "8080"),
+		TMDBAPIKey:        os.Getenv("TMDB_API_KEY"),
+		LogLevel:          getOrDefault("LOG_LEVEL", "info"),
+		AllowedOrigin:     os.Getenv("ALLOWED_ORIGIN"),
+		SupabaseJWKSURL:   supabaseURL + "/auth/v1/.well-known/jwks.json",
+		SupabaseURL:       supabaseURL,
 		SupabaseSecretKey: os.Getenv("SUPABASE_SECRET_KEY"),
 		AppleTeamID:       os.Getenv("APPLE_TEAM_ID"),
 		AppleKeyID:        os.Getenv("APPLE_KEY_ID"),

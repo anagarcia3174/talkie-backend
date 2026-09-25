@@ -72,6 +72,8 @@ func (h *AuthHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "invalid username")
 		case errors.Is(err, auth.ErrUsernameTaken):
 			writeError(w, http.StatusConflict, "username already taken")
+		case errors.Is(err, auth.ErrUsernameNotAllowed):
+			writeError(w, http.StatusUnprocessableEntity, "objectionable content")
 		default:
 			h.logger.Error("update username failed", "error", err)
 			writeError(w, http.StatusInternalServerError, "internal server error")
