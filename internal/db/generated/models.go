@@ -143,6 +143,12 @@ func (ns NullReportStatus) Value() (driver.Value, error) {
 	return string(ns.ReportStatus), nil
 }
 
+type Block struct {
+	BlockerID uuid.UUID `json:"blocker_id"`
+	BlockedID uuid.UUID `json:"blocked_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type Comment struct {
 	ID               uuid.UUID `json:"id"`
 	UserID           uuid.UUID `json:"user_id"`

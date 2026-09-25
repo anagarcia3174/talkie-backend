@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	BlockUser(ctx context.Context, arg BlockUserParams) error
 	CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error)
 	CreateReport(ctx context.Context, arg CreateReportParams) (Report, error)
 	DeleteComment(ctx context.Context, id uuid.UUID) error
@@ -18,9 +19,11 @@ type Querier interface {
 	GetProfileByID(ctx context.Context, id uuid.UUID) (GetProfileByIDRow, error)
 	IsUserBanned(ctx context.Context, id uuid.UUID) (bool, error)
 	IsUsernameTaken(ctx context.Context, username *string) (bool, error)
+	ListBlockedUsers(ctx context.Context, blockerID uuid.UUID) ([]ListBlockedUsersRow, error)
 	ListCommentsByEpisode(ctx context.Context, arg ListCommentsByEpisodeParams) ([]ListCommentsByEpisodeRow, error)
-	ListCommentsByMovie(ctx context.Context, tmdbID int32) ([]ListCommentsByMovieRow, error)
+	ListCommentsByMovie(ctx context.Context, arg ListCommentsByMovieParams) ([]ListCommentsByMovieRow, error)
 	SetUsername(ctx context.Context, arg SetUsernameParams) (SetUsernameRow, error)
+	UnblockUser(ctx context.Context, arg UnblockUserParams) error
 	UpdateComment(ctx context.Context, arg UpdateCommentParams) (Comment, error)
 }
 

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/anagarcia3174/talkie-backend/internal/auth"
+	"github.com/anagarcia3174/talkie-backend/internal/blocks"
 	"github.com/anagarcia3174/talkie-backend/internal/comments"
 	"github.com/anagarcia3174/talkie-backend/internal/config"
 	"github.com/anagarcia3174/talkie-backend/internal/db"
@@ -64,12 +65,15 @@ func main() {
 	commentHandler := httpapi.NewCommentHandler(commentSvc, logger)
 	reportSvc := reports.NewService(queries)
 	reportHandler := httpapi.NewReportHandler(reportSvc, logger)
+	blockSvc := blocks.NewService(queries)
+	blockHandler := httpapi.NewBlockHandler(blockSvc, logger)
 	router := httpapi.NewRouter(httpapi.RouterDeps{
 		Logger:         logger,
 		AuthHandler:    authHandler,
 		MediaHandler:   mediaHandler,
 		CommentHandler: commentHandler,
 		ReportHandler:  reportHandler,
+		BlockHandler:   blockHandler,
 		Verifier:       verifier,
 		BanChecker:     queries,
 		AllowedOrigin:  cfg.AllowedOrigin,

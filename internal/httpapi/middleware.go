@@ -45,6 +45,24 @@ func AuthMiddleware(verifier *auth.Verifier) func(http.Handler) http.Handler {
 	}
 }
 
+// OptionalAuthMiddleware sets the user ID in the context when the request
+// carries a valid token, and otherwise continues as signed out. It never
+// rejects: public routes must keep working with a missing or expired token.
+func OptionalAuthMiddleware(verifier *auth.Verifier) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+			if ok && token != "" {
+				if claims, err := verifier.Verify(token); err == nil {
+					ctx := context.WithValue(r.Context(), userIDContextKey, claims.Subject)
+					r = r.WithContext(ctx)
+				}
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func OriginMiddleware(allowedOrigin string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

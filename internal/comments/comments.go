@@ -9,6 +9,7 @@ import (
 	"github.com/anagarcia3174/talkie-backend/internal/moderation"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type MediaType string
@@ -106,8 +107,13 @@ func (s *Service) Create(ctx context.Context, in CreateCommentInput) (Comment, e
 	return toComment(row), nil
 }
 
-func (s *Service) ListByMovie(ctx context.Context, tmdbID int32) ([]CommentWithUsername, error) {
-	rows, err := s.comments.ListCommentsByMovie(ctx, tmdbID)
+// ListByMovie lists a movie's visible comments. viewerID is the signed-in
+// user's ID, or "" when signed out; it's used to hide users they blocked.
+func (s *Service) ListByMovie(ctx context.Context, tmdbID int32, viewerID string) ([]CommentWithUsername, error) {
+	rows, err := s.comments.ListCommentsByMovie(ctx, db.ListCommentsByMovieParams{
+		TmdbID:   tmdbID,
+		ViewerID: viewerUUID(viewerID),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -129,11 +135,13 @@ func (s *Service) ListByMovie(ctx context.Context, tmdbID int32) ([]CommentWithU
 	return out, nil
 }
 
-func (s *Service) ListByEpisode(ctx context.Context, tmdbID, season, episode int32) ([]CommentWithUsername, error) {
+// ListByEpisode lists an episode's visible comments. viewerID works as in ListByMovie.
+func (s *Service) ListByEpisode(ctx context.Context, tmdbID, season, episode int32, viewerID string) ([]CommentWithUsername, error) {
 	rows, err := s.comments.ListCommentsByEpisode(ctx, db.ListCommentsByEpisodeParams{
 		TmdbID:        tmdbID,
 		SeasonNumber:  &season,
 		EpisodeNumber: &episode,
+		ViewerID:      viewerUUID(viewerID),
 	})
 	if err != nil {
 		return nil, err
@@ -221,6 +229,16 @@ func toComment(row db.Comment) Comment {
 		Body:             row.Body,
 		CreatedAt:        row.CreatedAt,
 	}
+}
+
+// viewerUUID converts an optional viewer ID to a nullable UUID;
+// empty or invalid IDs become NULL (treated as signed out).
+func viewerUUID(viewerID string) pgtype.UUID {
+	id, err := uuid.Parse(viewerID)
+	if err != nil {
+		return pgtype.UUID{}
+	}
+	return pgtype.UUID{Bytes: id, Valid: true}
 }
 
 func validMediaReference(mediaType MediaType, tmdbID int32, season, episode *int32) bool {

@@ -83,7 +83,8 @@ func (h *CommentHandler) ListByMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	list, err := h.svc.ListByMovie(r.Context(), int32(tmdbID))
+	viewerID, _ := UserIDFromContext(r.Context())
+	list, err := h.svc.ListByMovie(r.Context(), int32(tmdbID), viewerID)
 	if err != nil {
 		h.logger.Error("list movie comments failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal server error")
@@ -110,7 +111,8 @@ func (h *CommentHandler) ListByEpisode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	list, err := h.svc.ListByEpisode(r.Context(), int32(tmdbID), int32(season), int32(episode))
+	viewerID, _ := UserIDFromContext(r.Context())
+	list, err := h.svc.ListByEpisode(r.Context(), int32(tmdbID), int32(season), int32(episode), viewerID)
 	if err != nil {
 		h.logger.Error("list episode comments failed", "error", err,
 			"tmdb_id", tmdbID, "season", season, "episode", episode)

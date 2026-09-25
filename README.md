@@ -20,7 +20,7 @@ happens" — instead of a generic review or discussion thread.
 ## Explicitly Not in Scope (for now)
 
 Reviews, ratings, watch-lists/watched status, a social graph (following,
-likes), user blocking, and OAuth. These were cut for scope discipline, not
+likes), and OAuth. These were cut for scope discipline, not
 because they're bad ideas — they're what caused the previous version to
 stall.
 
@@ -32,13 +32,20 @@ stall.
 - **Bans:** a banned user gets `403 account suspended` on create/edit
   comment, report, and `PATCH /me`, and their comments are hidden from
   comment lists. They can still delete their comments and their account.
-  There's no admin UI yet — ban/unban from the Supabase SQL editor:
+  There's no admin UI yet — ban/unban from the Supabase SQL editor (see below).
+- **Auto-hide:** a comment with 2+ reports that aren't `dismissed` is hidden
+  from comment lists. To restore it, dismiss its reports (see below).
+- **Blocking:** users can block other users. Comment list endpoints accept an
+  optional JWT; when present, comments from users the viewer blocked are
+  left out. A missing or invalid token is treated as signed out, never 401.
 
 ```sql
 -- ban
 UPDATE public.profiles SET banned_at = now() WHERE username = '<username>';
 -- unban
 UPDATE public.profiles SET banned_at = NULL WHERE username = '<username>';
+-- restore an auto-hidden comment
+UPDATE public.reports SET report_status = 'dismissed' WHERE comment_id = '<comment_id>';
 ```
 
 ---
@@ -69,6 +76,9 @@ generates the Go types and query methods around it.
 | POST | `/signup` | — | Create an account |
 | POST | `/login` | — | Exchange credentials for a JWT |
 | GET | `/me` | required | Get the current user |
+| GET | `/me/blocks` | required | List users the current user has blocked |
+| POST | `/users/{user_id}/block` | required | Block a user (204; 400 self, 404 unknown user; repeat blocks are no-ops) |
+| DELETE | `/users/{user_id}/block` | required | Unblock a user (204) |
 
 ### Media (proxies TMDB — read-only, no API key exposed to clients)
 | Method | Path | Auth | Description |
@@ -82,8 +92,8 @@ generates the Go types and query methods around it.
 ### Comments
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/movies/{tmdb_id}/comments` | — | List comments on a movie, by timestamp |
-| GET | `/tv/{tmdb_id}/season/{season}/episode/{episode}/comments` | — | List comments on an episode, by timestamp |
+| GET | `/movies/{tmdb_id}/comments` | optional | List comments on a movie, by timestamp |
+| GET | `/tv/{tmdb_id}/season/{season}/episode/{episode}/comments` | optional | List comments on an episode, by timestamp |
 | POST | `/comments` | required | Post a comment |
 | PATCH | `/comments/{comment_id}` | required, owner only | Edit a comment's body/timestamp |
 | DELETE | `/comments/{comment_id}` | required, owner only | Delete a comment |

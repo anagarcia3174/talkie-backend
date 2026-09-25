@@ -18,6 +18,7 @@ type RouterDeps struct {
 	MediaHandler   *MediaHandler
 	CommentHandler *CommentHandler
 	ReportHandler  *ReportHandler
+	BlockHandler   *BlockHandler
 	Verifier       *auth.Verifier
 	BanChecker     BanChecker
 	AllowedOrigin  string
@@ -42,6 +43,7 @@ func NewRouter(deps RouterDeps) http.Handler {
 	r.Group(func(r chi.Router) {
 		r.Use(AuthMiddleware(deps.Verifier))
 		r.Get("/me", deps.AuthHandler.Me)
+		r.Get("/me/blocks", deps.BlockHandler.List)
 	})
 
 	r.Group(func(r chi.Router) {
@@ -51,8 +53,9 @@ func NewRouter(deps RouterDeps) http.Handler {
 		r.Get("/movies/{tmdb_id}", deps.MediaHandler.GetMovie)
 		r.Get("/tv/{tmdb_id}", deps.MediaHandler.GetTVShow)
 		r.Get("/tv/{tmdb_id}/season/{season}/episode/{episode}", deps.MediaHandler.GetEpisode)
-		r.Get("/movies/{tmdb_id}/comments", deps.CommentHandler.ListByMovie)
-		r.Get("/tv/{tmdb_id}/season/{season}/episode/{episode}/comments", deps.CommentHandler.ListByEpisode)
+		// Optional auth: signed-in viewers don't see comments from users they blocked.
+		r.With(OptionalAuthMiddleware(deps.Verifier)).Get("/movies/{tmdb_id}/comments", deps.CommentHandler.ListByMovie)
+		r.With(OptionalAuthMiddleware(deps.Verifier)).Get("/tv/{tmdb_id}/season/{season}/episode/{episode}/comments", deps.CommentHandler.ListByEpisode)
 	})
 
 	r.Group(func(r chi.Router) {
@@ -70,6 +73,10 @@ func NewRouter(deps RouterDeps) http.Handler {
 			notBanned,
 		).Post("/comments/{comment_id}/reports", deps.ReportHandler.Create)
 		r.With(notBanned).Patch("/me", deps.AuthHandler.UpdateMe)
+		r.With(
+			httprate.LimitBy(30, time.Minute, clientIPKey),
+		).Post("/users/{user_id}/block", deps.BlockHandler.Block)
+		r.Delete("/users/{user_id}/block", deps.BlockHandler.Unblock)
 		r.With(
 			httprate.LimitBy(5, time.Minute, clientIPKey),
 			RequireRecentSignIn(5*time.Minute),

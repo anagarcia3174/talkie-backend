@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createComment = `-- name: CreateComment :one
@@ -99,13 +100,25 @@ WHERE c.tmdb_media_type = 'tv'
   AND c.season_number = $2
   AND c.episode_number = $3
   AND p.banned_at IS NULL
+  -- auto-hide: 2+ non-dismissed reports (one per user, via the reports unique constraint)
+  AND (
+    SELECT count(*) FROM reports r
+    WHERE r.comment_id = c.id AND r.report_status <> 'dismissed'
+  ) < 2
+  -- hide comments from users the viewer blocked (viewer_id is NULL when signed out)
+  AND NOT EXISTS (
+    SELECT 1 FROM blocks b
+    WHERE b.blocker_id = $4::uuid
+      AND b.blocked_id = c.user_id
+  )
 ORDER BY c.timestamp_seconds ASC
 `
 
 type ListCommentsByEpisodeParams struct {
-	TmdbID        int32  `json:"tmdb_id"`
-	SeasonNumber  *int32 `json:"season_number"`
-	EpisodeNumber *int32 `json:"episode_number"`
+	TmdbID        int32       `json:"tmdb_id"`
+	SeasonNumber  *int32      `json:"season_number"`
+	EpisodeNumber *int32      `json:"episode_number"`
+	ViewerID      pgtype.UUID `json:"viewer_id"`
 }
 
 type ListCommentsByEpisodeRow struct {
@@ -122,7 +135,12 @@ type ListCommentsByEpisodeRow struct {
 }
 
 func (q *Queries) ListCommentsByEpisode(ctx context.Context, arg ListCommentsByEpisodeParams) ([]ListCommentsByEpisodeRow, error) {
-	rows, err := q.db.Query(ctx, listCommentsByEpisode, arg.TmdbID, arg.SeasonNumber, arg.EpisodeNumber)
+	rows, err := q.db.Query(ctx, listCommentsByEpisode,
+		arg.TmdbID,
+		arg.SeasonNumber,
+		arg.EpisodeNumber,
+		arg.ViewerID,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -161,8 +179,24 @@ JOIN profiles p ON p.id = c.user_id
 WHERE c.tmdb_media_type = 'movie'
   AND c.tmdb_id = $1
   AND p.banned_at IS NULL
+  -- auto-hide: 2+ non-dismissed reports (one per user, via the reports unique constraint)
+  AND (
+    SELECT count(*) FROM reports r
+    WHERE r.comment_id = c.id AND r.report_status <> 'dismissed'
+  ) < 2
+  -- hide comments from users the viewer blocked (viewer_id is NULL when signed out)
+  AND NOT EXISTS (
+    SELECT 1 FROM blocks b
+    WHERE b.blocker_id = $2::uuid
+      AND b.blocked_id = c.user_id
+  )
 ORDER BY c.timestamp_seconds ASC
 `
+
+type ListCommentsByMovieParams struct {
+	TmdbID   int32       `json:"tmdb_id"`
+	ViewerID pgtype.UUID `json:"viewer_id"`
+}
 
 type ListCommentsByMovieRow struct {
 	ID               uuid.UUID `json:"id"`
@@ -177,8 +211,8 @@ type ListCommentsByMovieRow struct {
 	Username         *string   `json:"username"`
 }
 
-func (q *Queries) ListCommentsByMovie(ctx context.Context, tmdbID int32) ([]ListCommentsByMovieRow, error) {
-	rows, err := q.db.Query(ctx, listCommentsByMovie, tmdbID)
+func (q *Queries) ListCommentsByMovie(ctx context.Context, arg ListCommentsByMovieParams) ([]ListCommentsByMovieRow, error) {
+	rows, err := q.db.Query(ctx, listCommentsByMovie, arg.TmdbID, arg.ViewerID)
 	if err != nil {
 		return nil, err
 	}
