@@ -76,6 +76,7 @@ func main() {
 		BlockHandler:   blockHandler,
 		Verifier:       verifier,
 		BanChecker:     queries,
+		TermsChecker:   queries,
 		AllowedOrigin:  cfg.AllowedOrigin,
 	})
 

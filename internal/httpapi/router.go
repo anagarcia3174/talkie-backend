@@ -21,6 +21,7 @@ type RouterDeps struct {
 	BlockHandler   *BlockHandler
 	Verifier       *auth.Verifier
 	BanChecker     BanChecker
+	TermsChecker   TermsChecker
 	AllowedOrigin  string
 }
 
@@ -62,17 +63,22 @@ func NewRouter(deps RouterDeps) http.Handler {
 		r.Use(OriginMiddleware(deps.AllowedOrigin))
 		r.Use(AuthMiddleware(deps.Verifier))
 		notBanned := RequireNotBanned(deps.BanChecker)
+		termsAccepted := RequireTermsAccepted(deps.TermsChecker)
 		r.With(
 			httprate.LimitBy(15, time.Minute, clientIPKey),
 			notBanned,
+			termsAccepted,
 		).Post("/comments", deps.CommentHandler.Create)
-		r.With(notBanned).Patch("/comments/{comment_id}", deps.CommentHandler.Update)
+		r.With(notBanned, termsAccepted).Patch("/comments/{comment_id}", deps.CommentHandler.Update)
 		r.Delete("/comments/{comment_id}", deps.CommentHandler.Delete)
 		r.With(
 			httprate.LimitBy(10, time.Minute, clientIPKey),
 			notBanned,
 		).Post("/comments/{comment_id}/reports", deps.ReportHandler.Create)
 		r.With(notBanned).Patch("/me", deps.AuthHandler.UpdateMe)
+		r.With(
+			httprate.LimitBy(10, time.Minute, clientIPKey),
+		).Post("/me/terms", deps.AuthHandler.AcceptTerms)
 		r.With(
 			httprate.LimitBy(30, time.Minute, clientIPKey),
 		).Post("/users/{user_id}/block", deps.BlockHandler.Block)

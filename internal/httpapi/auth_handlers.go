@@ -84,6 +84,28 @@ func (h *AuthHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, user)
 }
 
+func (h *AuthHandler) AcceptTerms(w http.ResponseWriter, r *http.Request) {
+	userID, ok := UserIDFromContext(r.Context())
+	if !ok {
+		h.logger.Error("userID missing from context on protected route")
+		writeError(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	user, err := h.svc.AcceptTerms(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			writeError(w, http.StatusUnauthorized, "invalid credentials")
+			return
+		}
+		h.logger.Error("accept terms failed", "error", err, "user_id", userID)
+		writeError(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, user)
+}
+
 func (h *AuthHandler) DeleteMe(w http.ResponseWriter, r *http.Request) {
 	userID, ok := UserIDFromContext(r.Context())
 	if !ok {

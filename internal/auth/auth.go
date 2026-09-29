@@ -15,9 +15,10 @@ import (
 )
 
 type User struct {
-	ID        string    `json:"id"`
-	Username  *string   `json:"username"`
-	CreatedAt time.Time `json:"created_at"`
+	ID            string    `json:"id"`
+	Username      *string   `json:"username"`
+	CreatedAt     time.Time `json:"created_at"`
+	TermsAccepted bool      `json:"terms_accepted"`
 }
 
 var (
@@ -76,7 +77,7 @@ func (s *Service) GetCurrentUser(ctx context.Context, userID string) (User, erro
 		return User{}, err
 	}
 
-	return User{ID: row.ID.String(), Username: row.Username, CreatedAt: row.CreatedAt}, nil
+	return User{ID: row.ID.String(), Username: row.Username, CreatedAt: row.CreatedAt, TermsAccepted: row.TermsAccepted}, nil
 }
 
 func (s *Service) SetUsername(ctx context.Context, userID, username string) (User, error) {
@@ -112,5 +113,22 @@ func (s *Service) SetUsername(ctx context.Context, userID, username string) (Use
 		return User{}, err
 	}
 
-	return User{ID: row.ID.String(), Username: row.Username, CreatedAt: row.CreatedAt}, nil
+	return User{ID: row.ID.String(), Username: row.Username, CreatedAt: row.CreatedAt, TermsAccepted: row.TermsAccepted}, nil
+}
+
+func (s *Service) AcceptTerms(ctx context.Context, userID string) (User, error) {
+	id, err := uuid.Parse(userID)
+	if err != nil {
+		return User{}, ErrInvalidCredentials
+	}
+
+	row, err := s.profiles.AcceptTerms(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return User{}, ErrInvalidCredentials
+		}
+		return User{}, err
+	}
+
+	return User{ID: row.ID.String(), Username: row.Username, CreatedAt: row.CreatedAt, TermsAccepted: row.TermsAccepted}, nil
 }

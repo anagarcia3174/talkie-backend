@@ -11,12 +11,14 @@ import (
 )
 
 type Querier interface {
+	AcceptTerms(ctx context.Context, id uuid.UUID) (AcceptTermsRow, error)
 	BlockUser(ctx context.Context, arg BlockUserParams) error
 	CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error)
 	CreateReport(ctx context.Context, arg CreateReportParams) (Report, error)
 	DeleteComment(ctx context.Context, id uuid.UUID) error
 	GetCommentByID(ctx context.Context, id uuid.UUID) (Comment, error)
 	GetProfileByID(ctx context.Context, id uuid.UUID) (GetProfileByIDRow, error)
+	HasAcceptedTerms(ctx context.Context, id uuid.UUID) (bool, error)
 	IsUserBanned(ctx context.Context, id uuid.UUID) (bool, error)
 	IsUsernameTaken(ctx context.Context, username *string) (bool, error)
 	ListBlockedUsers(ctx context.Context, blockerID uuid.UUID) ([]ListBlockedUsersRow, error)

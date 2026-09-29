@@ -12,23 +12,68 @@ import (
 	"github.com/google/uuid"
 )
 
+const acceptTerms = `-- name: AcceptTerms :one
+UPDATE profiles
+SET terms_accepted_at = now()
+WHERE id = $1
+RETURNING id, username, created_at, (terms_accepted_at IS NOT NULL)::boolean AS terms_accepted
+`
+
+type AcceptTermsRow struct {
+	ID            uuid.UUID `json:"id"`
+	Username      *string   `json:"username"`
+	CreatedAt     time.Time `json:"created_at"`
+	TermsAccepted bool      `json:"terms_accepted"`
+}
+
+func (q *Queries) AcceptTerms(ctx context.Context, id uuid.UUID) (AcceptTermsRow, error) {
+	row := q.db.QueryRow(ctx, acceptTerms, id)
+	var i AcceptTermsRow
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.CreatedAt,
+		&i.TermsAccepted,
+	)
+	return i, err
+}
+
 const getProfileByID = `-- name: GetProfileByID :one
-SELECT id, username, created_at
+SELECT id, username, created_at, (terms_accepted_at IS NOT NULL)::boolean AS terms_accepted
 FROM profiles
 WHERE id = $1
 `
 
 type GetProfileByIDRow struct {
-	ID        uuid.UUID `json:"id"`
-	Username  *string   `json:"username"`
-	CreatedAt time.Time `json:"created_at"`
+	ID            uuid.UUID `json:"id"`
+	Username      *string   `json:"username"`
+	CreatedAt     time.Time `json:"created_at"`
+	TermsAccepted bool      `json:"terms_accepted"`
 }
 
 func (q *Queries) GetProfileByID(ctx context.Context, id uuid.UUID) (GetProfileByIDRow, error) {
 	row := q.db.QueryRow(ctx, getProfileByID, id)
 	var i GetProfileByIDRow
-	err := row.Scan(&i.ID, &i.Username, &i.CreatedAt)
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.CreatedAt,
+		&i.TermsAccepted,
+	)
 	return i, err
+}
+
+const hasAcceptedTerms = `-- name: HasAcceptedTerms :one
+SELECT EXISTS (
+    SELECT 1 FROM profiles WHERE id = $1 AND terms_accepted_at IS NOT NULL
+) AS accepted
+`
+
+func (q *Queries) HasAcceptedTerms(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, hasAcceptedTerms, id)
+	var accepted bool
+	err := row.Scan(&accepted)
+	return accepted, err
 }
 
 const isUserBanned = `-- name: IsUserBanned :one
@@ -61,7 +106,7 @@ const setUsername = `-- name: SetUsername :one
 UPDATE profiles
 SET username = $2
 WHERE id = $1
-RETURNING id, username, created_at
+RETURNING id, username, created_at, (terms_accepted_at IS NOT NULL)::boolean AS terms_accepted
 `
 
 type SetUsernameParams struct {
@@ -70,14 +115,20 @@ type SetUsernameParams struct {
 }
 
 type SetUsernameRow struct {
-	ID        uuid.UUID `json:"id"`
-	Username  *string   `json:"username"`
-	CreatedAt time.Time `json:"created_at"`
+	ID            uuid.UUID `json:"id"`
+	Username      *string   `json:"username"`
+	CreatedAt     time.Time `json:"created_at"`
+	TermsAccepted bool      `json:"terms_accepted"`
 }
 
 func (q *Queries) SetUsername(ctx context.Context, arg SetUsernameParams) (SetUsernameRow, error) {
 	row := q.db.QueryRow(ctx, setUsername, arg.ID, arg.Username)
 	var i SetUsernameRow
-	err := row.Scan(&i.ID, &i.Username, &i.CreatedAt)
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.CreatedAt,
+		&i.TermsAccepted,
+	)
 	return i, err
 }

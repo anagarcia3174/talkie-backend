@@ -120,3 +120,36 @@ func RequireNotBanned(checker BanChecker) func(http.Handler) http.Handler {
 		})
 	}
 }
+
+type TermsChecker interface {
+	HasAcceptedTerms(ctx context.Context, id uuid.UUID) (bool, error)
+}
+
+
+func RequireTermsAccepted(checker TermsChecker) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userID, ok := UserIDFromContext(r.Context())
+			if !ok {
+				writeError(w, http.StatusUnauthorized, "unauthorized")
+				return
+			}
+			id, err := uuid.Parse(userID)
+			if err != nil {
+				writeError(w, http.StatusUnauthorized, "unauthorized")
+				return
+			}
+
+			accepted, err := checker.HasAcceptedTerms(r.Context(), id)
+			if err != nil {
+				writeError(w, http.StatusInternalServerError, "internal server error")
+				return
+			}
+			if !accepted {
+				writeError(w, http.StatusForbidden, "terms not accepted")
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
