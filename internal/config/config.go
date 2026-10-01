@@ -18,6 +18,7 @@ type Config struct {
 	AppleKeyID        string
 	AppleClientID     string
 	ApplePrivateKey   string
+	ClientIPHeader    string
 }
 
 var validLogLevels = map[string]bool{
@@ -42,6 +43,7 @@ func Load() (*Config, error) {
 		AppleKeyID:        os.Getenv("APPLE_KEY_ID"),
 		AppleClientID:     os.Getenv("APPLE_CLIENT_ID"),
 		ApplePrivateKey:   os.Getenv("APPLE_PRIVATE_KEY"),
+		ClientIPHeader:    os.Getenv("CLIENT_IP_HEADER"),
 	}
 
 	if cfg.DatabaseURL == "" {

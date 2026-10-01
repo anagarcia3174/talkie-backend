@@ -1,0 +1,12 @@
+# Secrets never go into the image — they're set as Fly secrets.
+.env
+.env.*
+.git
+.gitignore
+.DS_Store
+bin/
+talkie
+*.md
+fly.toml
+Dockerfile
+.dockerignore

@@ -78,6 +78,7 @@ func main() {
 		BanChecker:     queries,
 		TermsChecker:   queries,
 		AllowedOrigin:  cfg.AllowedOrigin,
+		ClientIPHeader: cfg.ClientIPHeader,
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

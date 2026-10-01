@@ -152,3 +152,25 @@ are all kept deliberately separate rather than reused across layers.
   can't use error differences to enumerate valid accounts. Comment errors
   don't have that concern, so "not found" (404) and "not yours" (403) are
   reported distinctly.
+---
+
+## Deploy (Fly.io)
+
+Production runs on Fly.io as app `talkie-api` (`fly.toml`, `Dockerfile`),
+served at `https://api.gettalkie.app`. The database is the Supabase project
+in `DATABASE_URL`.
+
+- **Config:** non-secret settings (`PORT`, `LOG_LEVEL`, `ALLOWED_ORIGIN`,
+  `CLIENT_IP_HEADER`) are in `fly.toml` `[env]`. Secrets (`DATABASE_URL`,
+  `TMDB_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `APPLE_*`) are set
+  with `fly secrets set` / `fly secrets import`. `.env` is excluded from the
+  image by `.dockerignore`.
+- **Client IP:** `CLIENT_IP_HEADER=Fly-Client-IP` makes rate limiting use the
+  real client IP instead of Fly's proxy. Leave it unset locally. Only set it
+  where every request passes through a proxy that sets that header.
+- **Deploy:** `fly deploy` (one machine; `--ha=false` on the first deploy).
+- **Migrations:** run goose against `DATABASE_URL` before deploying code that
+  needs them: `goose -dir migrations postgres "$DATABASE_URL" up`.
+- **Logs / status:** `fly logs`, `fly status`. Health check: `GET /health`.
+- **Domain:** `fly certs add api.gettalkie.app` + a Cloudflare CNAME
+  `api → talkie-api.fly.dev` set to **DNS only** (grey cloud).

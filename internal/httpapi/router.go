@@ -23,6 +23,7 @@ type RouterDeps struct {
 	BanChecker     BanChecker
 	TermsChecker   TermsChecker
 	AllowedOrigin  string
+	ClientIPHeader string
 }
 
 func NewRouter(deps RouterDeps) http.Handler {
@@ -30,7 +31,11 @@ func NewRouter(deps RouterDeps) http.Handler {
 
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
-	r.Use(middleware.ClientIPFromRemoteAddr)
+	if deps.ClientIPHeader != "" {
+		r.Use(middleware.ClientIPFromHeader(deps.ClientIPHeader))
+	} else {
+		r.Use(middleware.ClientIPFromRemoteAddr)
+	}
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{deps.AllowedOrigin},
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
