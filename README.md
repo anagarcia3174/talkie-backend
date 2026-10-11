@@ -174,3 +174,12 @@ in `DATABASE_URL`.
 - **Logs / status:** `fly logs`, `fly status`. Health check: `GET /health`.
 - **Domain:** `fly certs add api.gettalkie.app` + a Cloudflare CNAME
   `api → talkie-api.fly.dev` set to **DNS only** (grey cloud).
+
+---
+
+## License
+
+Copyright © 2026 Ana Garcia. All rights reserved.
+
+This repository is public for portfolio purposes only. No license is granted to
+use, copy, modify, or distribute this code. See [LICENSE](LICENSE).
